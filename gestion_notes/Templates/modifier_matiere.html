@@ -1,0 +1,62 @@
+{% extends "base2.html" %}
+
+{% block content %}
+<style>
+    #form1 > label{
+        display: None;
+    }
+
+    #form1 > select{
+        padding: 3px;
+        margin-right: 3%; 
+    }
+
+</style>
+
+<h2 class="mb-4">Modifier une matière</h2>
+
+<!-- Formulaire pour le filtrage et la sélection de la matière -->
+<form class="form" method="GET" id="form1" action="{% url 'modifier_matiere' %}">
+    <!-- Choix de la classe -->
+    <label for="classe">Choisir la classe:</label>
+    <select  name="classe" id="classe" onchange="document.getElementById('matiere').value=''; this.form.submit(); document.getElementById('form-modification').reset(); ">
+        <option value="" disabled selected>Choisissez une classe</option>
+        {% for classe in classes %}
+            <option value="{{ classe }}" {% if classe == selected_classe %} selected {% endif %}>
+                {{ classe }}
+            </option>
+        {% endfor %}
+    </select>
+
+    <!-- Choix du semestre -->
+    <label for="semestre">Choisir le semestre:</label>
+    <select name="semestre" id="semestre" onchange="document.getElementById('matiere').value=''; this.form.submit(); document.getElementById('form-modification').reset();">
+            <option value="" disabled selected>Choisissez un semestre</option>
+        {% for semestre in semestres %}
+            <option value="{{ semestre.value }}" {% if semestre.value == selected_semestre %} selected {% endif %}>
+                {{ semestre.name }}
+            </option>
+        {% endfor %}
+    </select>
+
+    <!-- Choix de la matière -->
+    <label for="id_matiere">Choisir la matière:</label>
+    <select name="id_matiere" id="matiere" onchange="this.form.submit();">
+        <option value="" disabled selected>Choisissez une matière</option>
+        {% for matiere in matieres %}
+            <option value="{{ matiere.id }}" {% if matiere.id == selected_matiere %} selected {% endif %}>
+                {{ matiere }}
+            </option>
+        {% endfor %}
+    </select>
+</form> <hr>
+
+<!-- Formulaire pour modifier la matière sélectionnée -->
+<form class="form p-4 shadow-sm bg-light rounded"  method='POST' action="{% url 'modifier_matiere' %}" enctype="multipart/form-data" id="form-modification">
+    {% csrf_token %}
+    {{form.as_p}}
+
+    <button class="btn btn-primary" type="submit" >Soumettre</button>
+</form>
+
+{% endblock content %}

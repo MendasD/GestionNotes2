@@ -1,0 +1,42 @@
+
+/* Styles généraux pour le conteneur de messages */
+.messages {
+    position: fixed; /* Fixe le conteneur de messages */
+    top: 10px; /* Positionne à 10 pixels du haut de la fenêtre */
+    left: 50%; /* Centre le conteneur horizontalement */
+    transform: translateX(-50%); /* Centre le conteneur horizontalement */
+    width: 90%; /* Ajuste la largeur du conteneur */
+    max-width: 600px; /* Limite la largeur maximale */
+    z-index: 1050; /* Assure que le conteneur est au-dessus des autres éléments */
+    padding: 10px;
+    border-radius: 5px; /* Arrondit les coins du conteneur */
+}
+
+/* Styles pour chaque message individuel */
+.message {
+    margin-bottom: 10px; /* Espace entre les messages */
+    padding: 15px;
+    border-radius: 5px;
+    color: #fff; /* Couleur du texte */
+}
+
+/* Styles spécifiques pour les messages de succès */
+.message-success {
+    background-color: #28a745; /* Vert pour les succès */
+}
+
+/* Styles spécifiques pour les messages d'erreur */
+.message-error {
+    background-color: #dc3545; /* Rouge pour les erreurs */
+}
+
+/* Styles spécifiques pour les messages d'avertissement */
+.message-warning {
+    background-color: #ffc107; /* Jaune pour les avertissements */
+    color: #212529; /* Couleur du texte pour le contraste */
+}
+
+/* Styles spécifiques pour les messages d'information */
+.message-info {
+    background-color: #17a2b8; /* Bleu pour les informations */
+}

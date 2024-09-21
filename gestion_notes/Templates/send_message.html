@@ -1,0 +1,20 @@
+{% extends "base2.html" %}
+{% load static %}
+
+{% block content %}
+    <h2 class="mb-4">Saisir le message à envoyer à {{etudiant.name}}</h2>
+
+    <!-- Formulaire pour la modification d'un étudiant -->
+    <form method='POST' enctype='multipart/form-data' class="form p-4 shadow-sm bg-light rounded">
+        {% csrf_token %}
+        {{form.as_p}}
+
+        <!-- Fichier joint -->
+        <div class="mb-3">
+            <label for="fileInput" class="form-label" style="display:none;">Fichier joint</label>
+            <input class="form-control" name="fichier" type="file" id="fileInput" multiple>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Envoyer</button>
+    </form>
+{% endblock content %}

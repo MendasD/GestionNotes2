@@ -1,0 +1,116 @@
+{% extends "base2.html" %}
+
+{% block content %}
+
+<h2 class="mb-4">Ajouter une nouvelle liste de matières</h2>
+
+<form method="post" id="form-upload-notes" enctype="multipart/form-data" class="needs-validation" novalidate>
+    {% csrf_token %}
+    
+    <!-- Classe -->
+    <div class="form-group">
+        <label for="classe">Classe:</label>
+        <select id="classe" name="classe" class="form-control" required>
+            <option value="" disabled selected>Choisir une classe</option>
+            {% for classe in classes %}
+                <option value="{{ classe }}">{{ classe }}</option>
+            {% endfor %}
+        </select>
+        <div class="invalid-feedback">
+            Veuillez sélectionner une classe.
+        </div>
+    </div>
+
+
+    <!-- Fichier Excel -->
+    <div class="form-group">
+        <label for="fichier">Fichier Excel:</label>
+        <input type="file" id="fichier" name="fichier" class="form-control-file" accept=".xls,.xlsx" required>
+        <div class="invalid-feedback">
+            Veuillez télécharger un fichier Excel valide.
+        </div>
+    </div>
+
+   
+
+
+    <!-- Bouton de soumission -->
+    <button type="submit" id="btn-soumettre" class="btn btn-primary">Soumettre</button>
+</form>
+
+
+<script>
+    // JavaScript pour la validation Bootstrap
+        (function() {
+            'use strict'; // Mode strict pour une meilleure gestion des erreurs
+            window.addEventListener('load', function() {
+                var forms = document.getElementsByClassName('needs-validation');
+                /* Array.prototype.filter est une methode native de javascript pour filtrer les tableaux. Comme forms n'est 
+                pas un tableau mais une collection de formulaires, on utilise 'call' pour appeler la methode 'filter' precedente*/
+                var validation = Array.prototype.filter.call(forms, function(form) {
+                    form.addEventListener('submit', function(event) {
+                        if (form.checkValidity() === false) {
+                            event.preventDefault();
+                            event.stopPropagation(); // Empêche d'autres évènements de se déclencher
+                        }
+                        form.classList.add('was-validated'); // Ajoute la classe pour appliquer les styles de validation
+                    }, true); // 'le dernier true permet de gerer l'evenement pendant la phase de capture
+                });
+            }, false);
+        })();
+
+</script>
+
+{% endblock content %}
+
+{% block scripts %}
+    <!-- chargement de la bibliothèque jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function(){
+           
+        //Envoi des données pour l'ajout des étudiants dans la base de données
+        var formulaire = document.getElementById("form-upload-notes")
+
+        formulaire.addEventListener("submit", function(event){
+            event.preventDefault()
+
+            var classe = document.querySelector("#classe").value
+            var fichier_excel = $('#fichier')[0].files[0]
+            console.log(classe)
+            console.log(fichier_excel)
+
+            if (classe && fichier_excel){
+                var formData = new FormData()
+
+                formData.append('classe', classe)
+                formData.append('fichier_excel', fichier_excel)
+
+                $.ajax({
+                    url: '{% url "ajouter_matieres" %}',
+                    type: "POST",
+                    data: formData,
+                    processData: false,  // Ne pas transformer les données en chaîne de caractères
+                    contentType: false,  // Ne pas fixer de type de contenu pour permettre l'envoi de fichiers
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    success: function(response) {
+                        alert('Toutes les matières ont été ajoutées!!!');
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Erreur:', xhr.responseJSON ? xhr.responseJSON.error : error);
+                        alert(`Erreur lors de la transmission des données ${error}.`);
+                    }
+                }); 
+
+            }else{
+                alert("Veuillez remplir tous les champs !!!")
+            }
+        })
+        })
+         
+    </script>
+{% endblock scripts %}
+

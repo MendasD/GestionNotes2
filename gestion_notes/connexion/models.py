@@ -1,0 +1,295 @@
+from django.db import models
+from django.utils import timezone
+from django.contrib.auth.hashers import make_password
+from django.contrib import messages
+# Create your models here.
+
+class Etudiant(models.Model):
+    matricule = models.CharField(max_length=100, primary_key=True)
+    name = models.CharField(max_length=100)
+    email = models.EmailField()
+    password = models.CharField(max_length=100)
+    classe = models.ForeignKey('Classe', on_delete=models.CASCADE, related_name='etudiants')
+    annee_inscription = models.CharField(max_length=4)
+    annee_scolaire_en_cours = models.CharField(max_length=9, blank=True)
+    statut = models.CharField(
+        max_length=100, 
+        choices=[
+            ('En cours de formation', 'En cours de formation'),
+            ('Diplômé', 'Diplômé'),
+            ('Exclus', 'Exclus')
+        ],
+        default='En cours de formation'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    last_login = models.DateTimeField(null=True, blank=True)
+
+    def set_password(self, raw_password):
+        self.password = make_password(raw_password)
+
+    def check_password(self, raw_password):
+        from django.contrib.auth.hashers import check_password
+        return check_password(raw_password, self.password)
+
+    def save(self, *args, **kwargs):
+        # Remplir annee_scolaire_en_cours dynamiquement à partir de  annee_inscription
+        if not self.annee_scolaire_en_cours:
+            annee_debut = int(self.annee_inscription)
+            self.annee_scolaire_en_cours = f'{annee_debut}-{annee_debut+1}'
+        super().save(*args, **kwargs)
+    
+    def update_last_login(self):
+        self.last_login = timezone.now()
+        self.save()
+
+    def __str__(self):
+        return self.matricule
+    
+    @property
+    def years_at_school(self):
+        """Va retourner les annees passées à l'école depuis son inscription"""
+        annees = []
+        annee_debut = int(self.annee_inscription)
+        annee_fin = int(self.annee_scolaire_en_cours.split('-')[0])
+
+        for year in range(annee_debut, annee_fin + 1):
+            annees.append(f"{year}-{year+1}")
+
+        return annees
+    
+    def get_notes_by_year(self, annee_scolaire):
+        return self.notes.filter(annee_scolaire=annee_scolaire)
+    
+    def add_year(self):
+        annees=self.annee_scolaire_en_cours.split("-")
+        annees=[str(int(i)+1) for i in annees]
+        self.annee_scolaire_en_cours="-".join(annees)
+        self.save()
+    
+    @property
+    def Upgrade_etudiant(self):
+        AS = ['AS1','AS2','AS3']
+        ISEP = ['ISEP1','ISEP2','ISEP3','ISE2']
+        ISE = ['ISE1','ISE2','ISE3']
+        classe_etudiant = self.classe.name
+
+        if classe_etudiant in AS:
+            i=0
+            for classe_value in AS:
+                if classe_etudiant == classe_value:
+                    try:
+                        classe_new_name=AS[i+1]
+                        classe_new= Classe.objects.get(name =classe_new_name)
+                        self.classe=classe_new
+                        self.add_year()
+                        self.statut= 'En cours de formation'
+                        self.save()
+                        break
+                    except IndexError:
+                        self.classe=self.classe
+                        self.statut= 'Diplômé'
+                        self.save()
+                        Diplome.objects.create(etudiant=self)
+                        break
+                i=i+1
+        elif classe_etudiant in ['ISEP1','ISEP2','ISEP3']:
+            i=0
+            for classe_value in ISEP:
+                if classe_etudiant == classe_value:
+                    try:
+                        classe_new_name=ISEP[i+1]
+                        classe_new= Classe.objects.get(name =classe_new_name)
+                        self.classe=classe_new
+                        self.add_year()
+                        self.statut = 'En cours de formation'
+                        self.save()
+                        break
+                    except IndexError:
+                        self.classe=self.classe
+                        self.statut= 'Diplômé'
+                        self.save()
+                        Diplome.objects.create(etudiant=self)
+                        break
+                i=i+1
+            
+        else:
+            i=0
+            for classe_value in ISE:
+                if classe_value in classe_etudiant:
+                    try:
+                        classe_new_name=ISE[i+1]
+                        classe_new= Classe.objects.get(name =classe_new_name)
+                        self.classe=classe_new
+                        self.add_year()
+                        self.statut = 'En cours de formation'
+                        self.save()
+                        break
+                    except IndexError:
+                        self.classe=self.classe
+                        self.statut= 'Diplômé'
+                        self.save()
+                        Diplome.objects.create(etudiant=self)
+                        break
+                i=i+1
+
+class Diplome(models.Model):
+    etudiant = models.ForeignKey(Etudiant,on_delete=models.CASCADE,related_name='diplome')
+    fonction = models.CharField(null=True,blank=True,max_length=150)
+    date = models.DateTimeField(auto_now_add=True)
+
+class Motif_exclusion(models.Model):
+    motif = models.CharField(unique=True,max_length=200)
+
+class Exclu(models.Model):
+    etudiant = models.ForeignKey(Etudiant,on_delete=models.CASCADE,related_name='exclu')
+    motif = models.ForeignKey(Motif_exclusion,on_delete=models.CASCADE,related_name='motif_exclusion')
+    description = models.CharField(null=True,blank=True,max_length=200)
+    date = models.DateTimeField(auto_now_add=True)
+ 
+    
+class Classe(models.Model):
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=100, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
+    
+class Matiere(models.Model):
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=100)
+    classe = models.ForeignKey(Classe, on_delete=models.CASCADE, related_name='matieres')
+    credit = models.FloatField()
+    active = models.BooleanField(default=True)
+    semestre = models.CharField(
+        max_length=20,
+        choices=[
+            ('semestre1', 'Semestre 1'),
+            ('semestre2', 'Semestre 2')
+        ]
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['name', 'classe'], name='unique_matiere_per_classe')
+        ]
+
+    def __str__(self):
+        return self.name
+    
+class Note(models.Model):
+    id = models.AutoField(primary_key=True)
+    etudiant = models.ForeignKey(Etudiant, on_delete=models.CASCADE, related_name='notes')
+    matiere = models.ForeignKey(Matiere, on_delete=models.CASCADE, related_name='notes')
+    classe = models.ForeignKey(Classe, on_delete=models.CASCADE, related_name='notes', default=1)
+    note = models.FloatField()
+    type_note = models.CharField(
+        max_length=20,
+        choices=[
+            ('note1', 'Note 1'),
+            ('note2', 'Note 2'),
+            ('note1_et_note2', 'Note 1 et Note 2')
+        ]
+    )
+    semestre = models.CharField(
+        max_length=20,
+        choices=[
+            ('semestre1', 'Semestre 1'),
+            ('semestre2', 'Semestre 2')
+        ]
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    annee_scolaire = models.CharField(max_length=9, default='1999-2000')
+
+    def __str__(self):
+        return f"{self.etudiant.name} - {self.matiere.name} - {self.note} ({self.annee_scolaire})"
+    
+class Responsable(models.Model):
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=100)
+    email = models.EmailField(unique=True)
+    password = models.CharField(max_length=100)
+    filiere = models.CharField(
+        max_length=4,
+        choices=[
+            ('AS', 'Analyste Statisticien'),
+            ('ISEP', 'Ingénieur Statisticien Economiste Préparatoire'),
+            ('ISE', 'Ingénieur Statisticien Economiste')
+        ]
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    last_login = models.DateTimeField(null=True,blank=True)
+
+    def update_last_login(self):
+        self.last_login = timezone.now()
+        self.save()
+
+    def set_password(self, raw_password):
+        self.password = make_password(raw_password)
+
+    def check_password(self, raw_password):
+        from django.contrib.auth.hashers import check_password
+        return check_password(raw_password, self.password)
+
+    def get_etudiants_by_filiere(self):
+        filiere = self.filiere
+        if filiere == 'AS':
+            etudiants = {'AS1': [], 'AS2': [], 'AS3': []}
+
+            etudiants['AS1']=[etudiant for etudiant in Etudiant.objects.filter(classe__name='AS1',statut='En cours de formation')]
+            etudiants['AS2']=[etudiant for etudiant in Etudiant.objects.filter(classe__name='AS2',statut='En cours de formation')]
+            etudiants['AS3']=[etudiant for etudiant in Etudiant.objects.filter(classe__name='AS3',statut='En cours de formation')] 
+
+        elif filiere == 'ISEP':
+            etudiants = {'ISEP1': [], 'ISEP2': []}
+
+            etudiants['ISEP1']=[etudiant for etudiant in Etudiant.objects.filter(classe__name='ISEP1',statut='En cours de formation')]
+            etudiants['ISEP2']=[etudiant for etudiant in Etudiant.objects.filter(classe__name='ISEP2',statut='En cours de formation')]
+
+        elif filiere == 'ISE':
+            etudiants = {'ISEP3':[],'ISE1-maths': [], 'ISE1-eco': [], 'ISE2': [], 'ISE3': []}
+
+            etudiants['ISEP3']=[etudiant for etudiant in Etudiant.objects.filter(classe__name='ISEP3',statut='En cours de formation')]
+            etudiants['ISE1-maths']=[etudiant for etudiant in Etudiant.objects.filter(classe__name='ISE1-maths',statut='En cours de formation')]
+            etudiants['ISE1-eco']=[etudiant for etudiant in Etudiant.objects.filter(classe__name='ISE1-eco',statut='En cours de formation')]
+            etudiants['ISE2']=[etudiant for etudiant in Etudiant.objects.filter(classe__name='ISE2',statut='En cours de formation')]
+            etudiants['ISE3']=[etudiant for etudiant in Etudiant.objects.filter(classe__name='ISE3',statut='En cours de formation')]
+
+        return etudiants
+    
+class Message(models.Model):
+    id = models.AutoField(primary_key=True)
+    responsable = models.ForeignKey(Responsable, on_delete=models.CASCADE, related_name='messages')
+    etudiant = models.ForeignKey(Etudiant, on_delete=models.CASCADE, related_name='messages')
+    sujet = models.CharField(max_length=255, blank=True, null=True)
+    message = models.TextField()
+    lu = models.BooleanField(default=False)
+    visible_etudiant = models.BooleanField(default=True)
+    visible_responsable = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"De {self.responsable.name} à  {self.etudiant.name}: {self.message[:20]}..."
+    
+    def diffuse_to_class(self, classes:list):
+        for classe in classes:
+            etudiants = Etudiant.objects.filter(classe__name=classe)
+            for etudiant in etudiants:
+                Message.objects.create(responsable=self.responsable, etudiant=etudiant, message=self.message)
+                print(f"Message envoyé à {etudiant.name} de la classe {classe}")
+    
+    def send_to_etudiant(self, etudiant_pk):
+        try:
+            etudiant = Etudiant.objects.get(pk=etudiant_pk)
+            Message.objects.create(responsable=self.responsable, etudiant=etudiant, message=self.message)
+            print(f"Message envoyé à {etudiant.name}")
+        except Etudiant.DoesNotExist:
+            print(f"Etudiant avec le pk {etudiant_pk} n'existe pas")
+
+class FichiersJoints(models.Model):
+    message = models.ForeignKey(Message,on_delete=models.CASCADE,related_name='fichier_joint')
+    fichier = models.FileField(upload_to='Messages_fichiers/', blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)

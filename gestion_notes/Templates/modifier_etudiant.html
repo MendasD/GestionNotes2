@@ -1,0 +1,14 @@
+{% extends "base2.html" %}
+{% load static %}
+
+{% block content %}
+    <h2 class="mb-4">Modifier les informations de l'étudiant</h2>
+
+    <!-- Formulaire pour la modification d'un étudiant -->
+    <form method='POST' enctype='multipart/form-data' class="form p-4 shadow-sm bg-light rounded">
+        {% csrf_token %}
+        {{form.as_p}}
+
+        <button type="submit" class="btn btn-primary">Valider</button>
+    </form>
+{% endblock content %}

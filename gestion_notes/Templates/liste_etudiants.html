@@ -1,0 +1,208 @@
+{% extends "base2.html" %}
+{% load static %}
+
+{% block content %}
+
+<style>
+   /* Styles spécifiques pour le mode sombre */
+    html[data-bs-theme="dark"] table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    html[data-bs-theme="dark"] th, html[data-bs-theme="dark"] td {
+        padding: 8px 12px;
+        text-align: left;
+        border: 1px solid #444; /* Bordure plus sombre */
+        color: #e0e0e0; /* Texte clair */
+    }
+
+    html[data-bs-theme="dark"] thead {
+        background-color: #222; /* Arrière-plan sombre pour l'en-tête */
+        color: #e0e0e0; /* Texte clair */
+    }
+
+    html[data-bs-theme="dark"] tbody tr:nth-child(even) {
+        background-color: #333; /* Alternance des lignes plus sombre */
+    }
+
+    html[data-bs-theme="dark"] tbody tr:hover {
+        background-color: #444; /* Couleur de survol légèrement plus foncée */
+    }
+    .search-input{
+        margin-right: 7px;
+    }
+</style>
+
+<form id="search-form" class="form" method='get'>
+    <div class="row">
+            <select name="classe" id="choix-classe" class="col-md-3 search-input" onchange="selectClasse()">
+                <option disabled selected>Choisir une classe</option>
+                {% for classe in classes %}
+                    <option value="{{classe}}" {% if classe == selected_classe %}selected{% endif %}>{{classe}}</option>
+                {% endfor %}
+                
+            </select>
+            <select name="annee" class="col-md-3 search-input" onchange="this.form.submit()">
+                <option disabled selected>Choisir une année</option>
+                {% for annee in annees %}
+                    <option value="{{annee}}" {% if annee == selected_annee %}selected{% endif %}>{{annee}}</option>
+                {% endfor %}
+            </select>
+            <select name="statut" class="col-md-3 search-input" onchange="this.form.submit()">
+                <option disabled selected>Choisir un statut</option>
+                {% for statut in statuts %}
+                    <option value="{{statut}}" {% if statut == selected_statut %}selected{% endif %}>{{statut}}</option>
+                {% endfor %}
+            </select>
+
+    </div>
+    <a href="{% url 'liste_etudiants' %}" class="btn btn-primary btn-sm float-end"> Effacer</a>
+</form><br><br>
+<a href="{% url 'ajouter_etudiant' %}" class="btn btn-success btn-sm float-end"><i class="fa fa-plus-circle"></i> Ajouter un étudiant</a>
+
+{% for classe,eleves in etudiants.items %}
+<div id="{{classe}}" class="groupe-classe">
+    <h2 class="mb-4">Liste des étudiants de {{classe}}</h2>
+    
+    <table class="table table-bordered">
+        <thead class="thead-light">
+            <tr>
+                <th>Matricule</th>
+                <th>Nom</th>
+                <th>Année Scolaire</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for eleve in eleves %}
+            <tr>
+                <td>{{eleve.pk}}</td>
+                <td>{{eleve.name}}</td>
+                <td>{{selected_annee|default:eleve.annee_scolaire_en_cours}}</td>
+                <td>
+                    <a href="{% url 'detail_etudiant' eleve.pk %}" class="btn btn-info btn-sm" >Voir</a>
+                    <a href="{% url 'modifier_etudiant' eleve.pk %}" class="btn btn-warning btn-sm">Modifier</a>
+                    <a href="{% url 'send_message' eleve.pk %}" class="btn btn-success btn-sm">Message</a>
+                    <a href="#delete_modal-{{eleve.pk}}" matricule="{{eleve.pk}}" class="btn btn-danger btn-sm" data-bs-toggle="modal">Supprimer</a>
+                    <a href= "{% if classe in cycle1 %}#upgrade_modal-{{eleve.pk}}{% else %}#diplome_modal-{{eleve.pk}}{% endif %}" matricule="{{eleve.pk}}" class="btn btn-info btn-sm" data-bs-toggle="modal">Upgrade</a>
+                   
+                </td>
+                <!-- The Modal for suppression -->
+                <div class="modal fade" id="delete_modal-{{eleve.pk}}" >
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+
+                            <!-- Modal Header -->
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="deleteModalLabel-{{eleve.pk}}">Confirmation de suppression</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+
+                            <!-- Modal body -->
+                            <div class="modal-body">
+                                Voulez-vous vraiment supprimer l'étudiant {{eleve.name}} ?
+                            </div>
+
+                            <!-- Modal footer -->
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                <a href="{% url 'delete_etudiant' eleve.pk %}" class="btn btn-danger">Confirmer la suppression</a>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- The Modal for upgrade when student will not be diplome -->
+                <div class="modal fade" id="upgrade_modal-{{eleve.pk}}" >
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+
+                            <!-- Modal Header -->
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="deleteModalLabel-{{eleve.pk}}">Admission en classe supérieure</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+
+                            <!-- Modal body -->
+                            <div class="modal-body">
+                                Voulez-vous vraiment admettre l'étudiant {{eleve.name}} en classe supérieure ?
+                            </div>
+
+                            <!-- Modal footer -->
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                <a href="{% url 'upgrade_etudiant' eleve.pk %}" class="btn btn-success">Confirmer</a>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- The Modal for upgrade when student will  be diplome -->
+                <div class="modal fade" id="diplome_modal-{{eleve.pk}}" >
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+
+                            <!-- Modal Header -->
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="deleteModalLabel-{{eleve.pk}}">Diplomation</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+
+                            <!-- Modal body -->
+                            <div class="modal-body">
+                                Voulez-vous vraiment diplômer l'étudiant {{eleve.name}} ?
+                            </div>
+
+                            <!-- Modal footer -->
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                <a href="{% url 'upgrade_etudiant' eleve.pk %}" class="btn btn-success">Confirmer </a>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </tr> 
+            {% empty %}
+                <tr>
+                    <td colspan="4">Aucun étudiant trouvé dans la base</td>
+                </tr>
+            {% endfor %}
+            
+        </tbody>
+    </table> 
+    
+ </div>   
+{% endfor %}
+
+
+<script>
+    function ActiveLink(){
+        var notesLink = document.getElementById('etudiants')
+        notesLink.classList.add('active')
+    }
+
+    ActiveLink()
+</script>
+
+<script>
+    function selectClasse(){
+        classe = document.getElementById('choix-classe').value;
+        groupe_classe = document.querySelectorAll('.groupe-classe');
+
+        groupe_classe.forEach(function(groupe){
+            groupe_id = groupe.getAttribute('id')
+            if(classe === groupe_id){
+                console.log(classe)
+                groupe.style.display = 'block';
+            }else{
+                groupe.style.display = 'none';
+            }
+
+        })
+    }
+</script>
+{% endblock content %}

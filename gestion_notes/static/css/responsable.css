@@ -1,0 +1,47 @@
+#dashboard {
+    width: 80%;
+    background-color: #6c757d; 
+    padding: 5%;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* Deux colonnes égales */
+    gap: 20px; /* Espacement entre les boutons */
+    border-radius: 12px; 
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Ombre légère */
+    margin: 0 auto; /* Centrer le tableau de bord */
+}
+
+#dashboard > button {
+    padding: 15px;
+    font-size: 20px;
+    width: 100%;
+    border-radius: 8px; 
+    background-color: #007bff; 
+    color: white; 
+    border: none; 
+    transition: background-color 0.3s ease, transform 0.2s ease; /* Animation au survol */
+}
+
+#dashboard > button:hover {
+    background-color: #0056b3; /* Couleur plus foncée au survol */
+    transform: translateY(-3px); /* Léger déplacement vers le haut au survol */
+}
+
+/* Mode sombre */
+html[data-bs-theme="dark"] #dashboard {
+    background-color: #343a40; 
+    box-shadow: 0 4px 8px rgba(255, 255, 255, 0.1); 
+}
+
+html[data-bs-theme="dark"] #dashboard > button {
+    background-color: #495057; 
+}
+
+html[data-bs-theme="dark"] #dashboard > button:hover {
+    background-color: #6c757d; 
+}
+
+@media (max-width: 768px) {
+    #dashboard {
+        grid-template-columns: 1fr; /* Une seule colonne sur les petits écrans */
+    }
+}

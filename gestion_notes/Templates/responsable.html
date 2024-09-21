@@ -1,0 +1,44 @@
+{% extends "base2.html" %}
+{% load static %}
+
+{% block extra_styles %}
+    <link rel="stylesheet" href="{% static 'css/responsable.css' %}">
+{% endblock extra_styles %}
+
+{% block sousLiens %}
+    {% for classe in classes %}
+        <a class="nav-link offcanvas-link" href="#" id="offcanvas-{{classe}}" style="font-size:20px;"> {{classe}}</a>
+    {% endfor %}
+{% endblock sousLiens %}
+
+{% block content %}
+
+    <div id="dashboard">
+        <button type="button" id="ChargerNotes" class="btn btn-primary" data-bs-toggle="tooltip" title="Permet d'ajouter une nouvelle feuille excel contenant des notes des étudiants" onclick="window.location.href='{% url 'charger_notes' %}'">Charger les notes</button>
+        <button type="button" class="btn btn-primary" data-bs-toggle="tooltip" title="Affiche une liste de tous les étudiants de la filière" onclick="window.location.href='{% url 'liste_etudiants' %}'">Liste des étudiants</button>
+        <button type="button" class="btn btn-primary" data-bs-toggle="tooltip" title="Permet l'ajout d'un seul étudiant" onclick="window.location.href='{% url 'ajouter_etudiant' %}'">Ajouter un étudiant</button>
+        <button type="button" class="btn btn-primary" data-bs-toggle="tooltip" title="Permet l'ajout d'une liste d'étudiants de la même classe" onclick="window.location.href='{% url 'charger_etudiants' %}'">Ajouter une liste d'étudiants</button>
+        <button type="button" class="btn btn-primary" data-bs-toggle="tooltip" title="Permet l'envoi d'un nouveau message" onclick="window.location.href='{% url 'charger_notes' %}'">Envoyer un message</button>
+        <button type="button" class="btn btn-primary" data-bs-toggle="tooltip" title="Permet l'ajout d'une seule matière" onclick="window.location.href='{% url 'ajouter_matiere' %}'">Ajouter une matière</button>
+        <button type="button" class="btn btn-primary" data-bs-toggle="tooltip" title="Permet de modifier une matière à préciser" onclick="window.location.href='{% url 'modifier_matiere' %}'">Modifier une matière</button>
+        <button type="button" class="btn btn-primary" data-bs-toggle="tooltip" title="Ajout d'une feuille excel contenant une liste de matière pour une classe donnée" onclick="window.location.href='{% url 'charger_matieres' %}'">Ajouter une liste de matières</button>
+    </div>
+
+{% endblock content %}
+
+{% block scripts %}
+    <script>
+        function ActiveLink(){
+            var notesLink = document.getElementById('accueil')
+            notesLink.classList.add('active')
+        }
+
+        ActiveLink()
+    </script>
+
+    <!-- script pour initialiser les tooltips (messages qui apparaissent quand on survole un element) -->
+    <script src="{% static 'javascript/tooltip.js' %}" ></script>
+
+    <script src="{% static 'javascript/etudiant.js' %}" ></script>
+
+{% endblock scripts %}

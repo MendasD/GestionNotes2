@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Mes Messages</h2>
+    
+    <!-- Section de recherche -->
+    <div class="search-section mb-4">
+        <form method="GET" action="">
+            <div class="row">
+                <div class="col-md-4">
+                    <input type="text" name="content" class="form-control" placeholder="Rechercher par sujet" id="search_content">
+                </div>
+                <div class="col-md-4">
+                    <input type="date" name="date" class="form-control" placeholder="Rechercher par date" id="search_date">
+                </div>
+            
+                <div class="col-md-4 text-end">
+                    <button type="submit" class="btn btn-primary">Reset</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Liste des messages -->
+    <div class="message-list">
+        {% for message in mes_messages %}
+        <div class="card message-card mb-3 box-message" data-date="{{message.created_at|date:'Y-m-d'}}" data-sujet="{{message.sujet}}">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>{{ message.responsable.name }}</strong> - <small>{{ message.created_at }}</small>
+                </div>
+                <div class="message-actions">
+                    <button class="btn btn-sm btn-success open-btn"   data-id="{{message.id}}" >
+                        Ouvrir
+                    </button>
+                    
+                    <a class="btn btn-sm btn-danger" href="{% url 'delete_message' message.id %}">Supprimer</a>
+                </div>
+            </div>
+            <div class="card-body">
+                <p title="De {{message.responsable.name}}" data-bs-toggle="popover" data-bs-trigger="hover" data-bs-content="{{message.message}}">{{ message.sujet|truncatewords:10 }}</p>
+            </div>
+        </div>
+
+        <!-- Modal pour afficher le message complet -->
+        <div class="modal fade" id="messageModal{{ message.id }}" tabindex="-1" aria-labelledby="messageModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="messageModalLabel">Message de {{ message.responsable.name }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>{{ message.message }}</p> <br>
+                        {% if message.fichier_joint.all %}
+                            <strong>Fichiers joints</strong><hr>
+                            {% for fichier_joint in message.fichier_joint.all %}
+                                <strong> {{fichier_joint.fichier.name}}</strong> ({{fichier_joint.fichier.size}} Octets) <a href="{% url 'ouvrir_fichier' fichier_joint.id %}" class="btn btn-sm btn-primary">Ouvrir</a> <a href="{% url 'enregistrer_fichier' fichier_joint.id %}"  class="btn btn-sm btn-success">Télécharger</a><hr>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                        <a  class="btn btn-danger" href="{% url 'delete_message' message.id %}">Supprimer</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+            <p class="text-center">Aucun message disponible</p>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+    .message-card {
+        border: 1px solid #ddd;
+        border-radius: 5px;
+    }
+    .message-actions {
+        display: flex;
+        gap: 10px; /* espace entre les éléments enfants */
+    }
+    .message-actions button {
+        padding: 5px 10px;
+    }
+</style>
+
+<script>
+    function ActiveLink(){
+        var messagesLink = document.getElementById('messages')
+        messagesLink.classList.add('active')
+    }
+
+    ActiveLink()
+</script>
+
+<script src="{% static 'javascript/message.js' %}"></script>
+
+<!-- script pour les popover qui s'affiche quand le curseur est sur un message -->
+<script src="{% static 'javascript/popover.js' %}"></script>
+
+<script src="{% static 'javascript/search.js' %}"></script>
+
+
+{% endblock %}
