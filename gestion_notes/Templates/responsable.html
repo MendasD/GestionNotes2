@@ -3,6 +3,14 @@
 
 {% block extra_styles %}
     <link rel="stylesheet" href="{% static 'css/responsable.css' %}">
+    <style>
+        body {
+            background-image: url("{% static 'images/ensae_bg.png' %}");
+            background-position: center -10%;
+            background-size: cover;
+            background-repeat: no-repeat;
+        }
+    </style>
 {% endblock extra_styles %}
 
 {% block sousLiens %}
@@ -13,7 +21,8 @@
 
 {% block content %}
 
-    <div id="dashboard">
+
+    <div id="dashboard" style="margin-top: 150px">
         <button type="button" id="ChargerNotes" class="btn btn-primary" data-bs-toggle="tooltip" title="Permet d'ajouter une nouvelle feuille excel contenant des notes des étudiants" onclick="window.location.href='{% url 'charger_notes' %}'">Charger les notes</button>
         <button type="button" class="btn btn-primary" data-bs-toggle="tooltip" title="Affiche une liste de tous les étudiants de la filière" onclick="window.location.href='{% url 'liste_etudiants' %}'">Liste des étudiants</button>
         <button type="button" class="btn btn-primary" data-bs-toggle="tooltip" title="Permet l'ajout d'un seul étudiant" onclick="window.location.href='{% url 'ajouter_etudiant' %}'">Ajouter un étudiant</button>
@@ -25,6 +34,7 @@
     </div>
 
 {% endblock content %}
+
 
 {% block scripts %}
     <script>

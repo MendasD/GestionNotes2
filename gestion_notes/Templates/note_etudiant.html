@@ -65,7 +65,7 @@
         <tr>
             <td>{{ etudiant.pk }}</td> 
             <td>{{ etudiant.name }}</td> 
-            <td>{{ classe_annee }}</td>
+            <td>{{ classe_annee|default:etudiant.classe}}</td>
             <td>{{ selected_year }}</td> 
         </tr>
     </tbody>
