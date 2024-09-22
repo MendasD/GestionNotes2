@@ -4,7 +4,7 @@
 {% block content %}
 
 <style>
-   /* Styles spécifiques pour le mode sombre */
+    /* Styles spécifiques pour le mode sombre */
     html[data-bs-theme="dark"] table {
         width: 100%;
         border-collapse: collapse;
@@ -29,42 +29,42 @@
     html[data-bs-theme="dark"] tbody tr:hover {
         background-color: #444; /* Couleur de survol légèrement plus foncée */
     }
-    .search-input{
+    .search-input {
         margin-right: 7px;
     }
 </style>
 
 <form id="search-form" class="form" method='get'>
     <div class="row">
-            <select name="classe" id="choix-classe" class="col-md-3 search-input" onchange="selectClasse()">
-                <option disabled selected>Choisir une classe</option>
-                {% for classe in classes %}
-                    <option value="{{classe}}" {% if classe == selected_classe %}selected{% endif %}>{{classe}}</option>
-                {% endfor %}
-                
-            </select>
-            <select name="annee" class="col-md-3 search-input" onchange="this.form.submit()">
-                <option disabled selected>Choisir une année</option>
-                {% for annee in annees %}
-                    <option value="{{annee}}" {% if annee == selected_annee %}selected{% endif %}>{{annee}}</option>
-                {% endfor %}
-            </select>
-            <select name="statut" class="col-md-3 search-input" onchange="this.form.submit()">
-                <option disabled selected>Choisir un statut</option>
-                {% for statut in statuts %}
-                    <option value="{{statut}}" {% if statut == selected_statut %}selected{% endif %}>{{statut}}</option>
-                {% endfor %}
-            </select>
-
+        <select name="classe" id="choix-classe" class="col-md-3 search-input" onchange="selectClasse()">
+            <option disabled selected>Choisir une classe</option>
+            {% for classe in classes %}
+                <option value="{{classe}}" {% if classe == selected_classe %}selected{% endif %}>{{classe}}</option>
+            {% endfor %}
+        </select>
+        <select name="annee" class="col-md-3 search-input" onchange="this.form.submit()">
+            <option disabled selected>Choisir une année</option>
+            {% for annee in annees %}
+                <option value="{{annee}}" {% if annee == selected_annee %}selected{% endif %}>{{annee}}</option>
+            {% endfor %}
+        </select>
+        <select name="statut" class="col-md-3 search-input" onchange="this.form.submit()">
+            <option disabled selected>Choisir un statut</option>
+            {% for statut in statuts %}
+                <option value="{{statut}}" {% if statut == selected_statut %}selected{% endif %}>{{statut}}</option>
+            {% endfor %}
+        </select>
     </div>
     <a href="{% url 'liste_etudiants' %}" class="btn btn-primary btn-sm float-end"> Effacer</a>
 </form><br><br>
 <a href="{% url 'ajouter_etudiant' %}" class="btn btn-success btn-sm float-end"><i class="fa fa-plus-circle"></i> Ajouter un étudiant</a>
 
-{% for classe,eleves in etudiants.items %}
+{% for classe, eleves in etudiants.items %}
 <div id="{{classe}}" class="groupe-classe">
     <h2 class="mb-4">Liste des étudiants de {{classe}}</h2>
     
+    <button class="btn btn-success btn-sm mb-2" onclick="telechargerTable('{{classe}}')">Télécharger</button>
+
     <table class="table table-bordered">
         <thead class="thead-light">
             <tr>
@@ -81,87 +81,63 @@
                 <td>{{eleve.name}}</td>
                 <td>{{selected_annee|default:eleve.annee_scolaire_en_cours}}</td>
                 <td>
-                    <a href="{% url 'detail_etudiant' eleve.pk %}" class="btn btn-info btn-sm" >Voir</a>
+                    <a href="{% url 'detail_etudiant' eleve.pk %}" class="btn btn-info btn-sm">Voir</a>
                     <a href="{% url 'modifier_etudiant' eleve.pk %}" class="btn btn-warning btn-sm">Modifier</a>
                     <a href="{% url 'send_message' eleve.pk %}" class="btn btn-success btn-sm">Message</a>
                     <a href="#delete_modal-{{eleve.pk}}" matricule="{{eleve.pk}}" class="btn btn-danger btn-sm" data-bs-toggle="modal">Supprimer</a>
-                    <a href= "{% if classe in cycle1 %}#upgrade_modal-{{eleve.pk}}{% else %}#diplome_modal-{{eleve.pk}}{% endif %}" matricule="{{eleve.pk}}" class="btn btn-info btn-sm" data-bs-toggle="modal">Upgrade</a>
-                   
+                    <a href="{% if classe in cycle1 %}#upgrade_modal-{{eleve.pk}}{% else %}#diplome_modal-{{eleve.pk}}{% endif %}" matricule="{{eleve.pk}}" class="btn btn-info btn-sm" data-bs-toggle="modal">Upgrade</a>
                 </td>
-                <!-- The Modal for suppression -->
-                <div class="modal fade" id="delete_modal-{{eleve.pk}}" >
+                <!-- Modal for deletion -->
+                <div class="modal fade" id="delete_modal-{{eleve.pk}}">
                     <div class="modal-dialog">
                         <div class="modal-content">
-
-                            <!-- Modal Header -->
                             <div class="modal-header">
                                 <h5 class="modal-title" id="deleteModalLabel-{{eleve.pk}}">Confirmation de suppression</h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                             </div>
-
-                            <!-- Modal body -->
                             <div class="modal-body">
                                 Voulez-vous vraiment supprimer l'étudiant {{eleve.name}} ?
                             </div>
-
-                            <!-- Modal footer -->
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
                                 <a href="{% url 'delete_etudiant' eleve.pk %}" class="btn btn-danger">Confirmer la suppression</a>
                             </div>
-
                         </div>
                     </div>
                 </div>
-
-                <!-- The Modal for upgrade when student will not be diplome -->
-                <div class="modal fade" id="upgrade_modal-{{eleve.pk}}" >
+                <!-- Modal for upgrade -->
+                <div class="modal fade" id="upgrade_modal-{{eleve.pk}}">
                     <div class="modal-dialog">
                         <div class="modal-content">
-
-                            <!-- Modal Header -->
                             <div class="modal-header">
                                 <h5 class="modal-title" id="deleteModalLabel-{{eleve.pk}}">Admission en classe supérieure</h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                             </div>
-
-                            <!-- Modal body -->
                             <div class="modal-body">
                                 Voulez-vous vraiment admettre l'étudiant {{eleve.name}} en classe supérieure ?
                             </div>
-
-                            <!-- Modal footer -->
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
                                 <a href="{% url 'upgrade_etudiant' eleve.pk %}" class="btn btn-success">Confirmer</a>
                             </div>
-
                         </div>
                     </div>
                 </div>
-
-                <!-- The Modal for upgrade when student will  be diplome -->
-                <div class="modal fade" id="diplome_modal-{{eleve.pk}}" >
+                <!-- Modal for diploma -->
+                <div class="modal fade" id="diplome_modal-{{eleve.pk}}">
                     <div class="modal-dialog">
                         <div class="modal-content">
-
-                            <!-- Modal Header -->
                             <div class="modal-header">
                                 <h5 class="modal-title" id="deleteModalLabel-{{eleve.pk}}">Diplomation</h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                             </div>
-
-                            <!-- Modal body -->
                             <div class="modal-body">
                                 Voulez-vous vraiment diplômer l'étudiant {{eleve.name}} ?
                             </div>
-
-                            <!-- Modal footer -->
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                                <a href="{% url 'upgrade_etudiant' eleve.pk %}" class="btn btn-success">Confirmer </a>
+                                <a href="{% url 'upgrade_etudiant' eleve.pk %}" class="btn btn-success">Confirmer</a>
                             </div>
-
                         </div>
                     </div>
                 </div>
@@ -171,38 +147,67 @@
                     <td colspan="4">Aucun étudiant trouvé dans la base</td>
                 </tr>
             {% endfor %}
-            
         </tbody>
     </table> 
-    
- </div>   
+</div>   
 {% endfor %}
 
+<!-- Inclure la bibliothèque SheetJS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <script>
-    function ActiveLink(){
-        var notesLink = document.getElementById('etudiants')
-        notesLink.classList.add('active')
+    function telechargerTable(classe) {
+        var data = [];
+        // Ajouter les en-têtes
+        data.push(['Matricule', 'Nom', 'Année Scolaire']);
+        
+        // Extraire les données de la table
+        var table = document.querySelector('#' + classe + ' table tbody');
+        var rows = table.querySelectorAll('tr');
+        
+        rows.forEach(function(row) {
+            var cols = row.querySelectorAll('td');
+            if (cols.length > 0) {
+                var rowData = [];
+                // Ignorer la dernière colonne (Actions)
+                for (var i = 0; i < cols.length - 1; i++) {
+                    rowData.push(cols[i].innerText.trim());
+                }
+                data.push(rowData);
+            }
+        });
+        
+        // Créer un nouveau classeur Excel
+        var wb = XLSX.utils.book_new();
+        var ws = XLSX.utils.aoa_to_sheet(data);
+        XLSX.utils.book_append_sheet(wb, ws, "Liste d'Étudiants");
+        XLSX.writeFile(wb, classe + "_etudiants.xlsx");
     }
-
-    ActiveLink()
 </script>
 
 <script>
-    function selectClasse(){
+    function ActiveLink() {
+        var notesLink = document.getElementById('etudiants');
+        notesLink.classList.add('active');
+    }
+    ActiveLink();
+</script>
+
+<script>
+    function selectClasse() {
         classe = document.getElementById('choix-classe').value;
         groupe_classe = document.querySelectorAll('.groupe-classe');
 
-        groupe_classe.forEach(function(groupe){
-            groupe_id = groupe.getAttribute('id')
-            if(classe === groupe_id){
-                console.log(classe)
+        groupe_classe.forEach(function(groupe) {
+            groupe_id = groupe.getAttribute('id');
+            if (classe === groupe_id) {
+                console.log(classe);
                 groupe.style.display = 'block';
-            }else{
+            } else {
                 groupe.style.display = 'none';
             }
-
-        })
+        });
     }
 </script>
+
 {% endblock content %}

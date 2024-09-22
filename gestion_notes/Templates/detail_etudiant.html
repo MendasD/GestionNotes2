@@ -7,6 +7,9 @@
 
 {% block content %}
 <style>
+
+
+
    /* Styles spécifiques pour le mode sombre */
     html[data-bs-theme="dark"] table {
         width: 100%;
@@ -16,26 +19,25 @@
     html[data-bs-theme="dark"] th, html[data-bs-theme="dark"] td {
         padding: 8px 12px;
         text-align: left;
-        border: 1px solid #444; /* Bordure plus sombre */
-        color: #e0e0e0; /* Texte clair */
+        border: 1px solid #444;
+        color: #e0e0e0;
     }
 
     html[data-bs-theme="dark"] thead {
-        background-color: #222; /* Arrière-plan sombre pour l'en-tête */
-        color: #e0e0e0; /* Texte clair */
+        background-color: #222;
+        color: #e0e0e0;
     }
 
     html[data-bs-theme="dark"] tbody tr:nth-child(even) {
-        background-color: #333; /* Alternance des lignes plus sombre */
+        background-color: #333;
     }
 
     html[data-bs-theme="dark"] tbody tr:hover {
-        background-color: #444; /* Couleur de survol légèrement plus foncée */
+        background-color: #444;
     }
 </style>
 
-<!-- Menu deroulant pour selectionner l'année académique -->
-<!-- On va effectuer une requete GET sur notre url, en lui passant le paramètre annee_scolaire -->
+<!-- Menu déroulant pour sélectionner l'année académique -->
 <form method="get">
     <label for="annee_scolaire">Choisir une année scolaire:</label>
     <select name="annee_scolaire" id="annee_scolaire" onchange="this.form.submit()">
@@ -58,17 +60,16 @@
     </thead>
     <tbody>
         <tr>
-            <td>{{ etudiant.pk }}</td> 
-            <td>{{ etudiant.name }}</td> 
+            <td>{{ etudiant.pk }}</td>
+            <td>{{ etudiant.name }}</td>
             <td>{{ classe_annee|default:etudiant.classe }}</td>
-            <td>{{selected_year}}</td> 
+            <td>{{ selected_year }}</td>
         </tr>
     </tbody>
 </table>
 
-
-    <h3>Semestre 1</h3>
-<table class="table-bordered">
+<h3>Semestre 1</h3>
+<table id="tableSemestre1" class="table-bordered">
     <thead>
         <tr>
             <th>Matière</th>
@@ -94,7 +95,7 @@
 </table>
 
 <h3>Semestre 2</h3>
-<table class="table-bordered">
+<table id="tableSemestre2" class="table-bordered">
     <thead>
         <tr>
             <th>Matière</th>
@@ -119,13 +120,65 @@
     </tbody>
 </table>
 
+<!-- Bouton pour télécharger les informations en Excel -->
+<button id="telechargerExcelBtn" class="btn btn-success">Télécharger en Excel</button>
+
+<!-- Inclure la bibliothèque SheetJS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
 <script>
-    function ActiveLink(){
-        var notesLink = document.getElementById('notes')
-        notesLink.classList.add('active')
+document.getElementById('telechargerExcelBtn').addEventListener('click', function () {
+    // Créer un tableau de données pour le fichier Excel
+    var data = [];
+    
+    // Ajouter l'en-tête des colonnes
+    data.push(['Matière', 'Crédit', 'Note 1', 'Note 2']);
+    
+    // Fonction pour extraire les données du tableau
+    function extractTableData(tableId) {
+        var table = document.getElementById(tableId);
+        var rows = table.querySelectorAll('tbody tr');
+        
+        rows.forEach(function (row) {
+            var cols = row.querySelectorAll('td');
+            if (cols.length > 0) {
+                var rowData = [];
+                cols.forEach(function (col) {
+                    rowData.push(col.innerText.trim());
+                });
+                data.push(rowData);
+            }
+        });
     }
 
-    ActiveLink()
+    // Extraire les données du Semestre 1 et Semestre 2
+    extractTableData('tableSemestre1');
+    extractTableData('tableSemestre2');
+
+    // Créer un nouveau classeur Excel
+    var wb = XLSX.utils.book_new();
+    
+    // Créer une nouvelle feuille de calcul avec les données
+    var ws = XLSX.utils.aoa_to_sheet(data);
+    
+    // Ajouter la feuille de calcul au classeur
+    XLSX.utils.book_append_sheet(wb, ws, "Notes");
+    
+    // Générer et télécharger le fichier Excel
+    XLSX.writeFile(wb, 'notes_etudiant.xlsx');
+});
+</script>
+
+<script>
+    function ActiveLink(){
+        var notesLink = document.getElementById('notes');
+        notesLink.classList.add('active');
+    }
+
+    ActiveLink();
 </script>
 
 {% endblock content %}
+
+
+
