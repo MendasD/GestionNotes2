@@ -7,10 +7,7 @@
 
 {% block content %}
 <style>
-
-
-
-   /* Styles spécifiques pour le mode sombre */
+    /* Styles spécifiques pour le mode sombre */
     html[data-bs-theme="dark"] table {
         width: 100%;
         border-collapse: collapse;
@@ -37,17 +34,25 @@
     }
 </style>
 
-<!-- Menu déroulant pour sélectionner l'année académique -->
-<form method="get">
-    <label for="annee_scolaire">Choisir une année scolaire:</label>
-    <select name="annee_scolaire" id="annee_scolaire" onchange="this.form.submit()">
-        {% for annee in annees_scolaires %}
-            <option value="{{ annee }}" {% if annee == selected_year %}selected{% endif %}>
-                {{ annee }}
-            </option>
-        {% endfor %}
-    </select>
-</form>
+<div style="display: flex; justify-content: space-between; align-items: center;">
+    <!-- Menu déroulant pour sélectionner l'année académique -->
+    <form method="get">
+        <label for="annee_scolaire">Choisir une année scolaire:</label>
+        <select name="annee_scolaire" id="annee_scolaire" onchange="this.form.submit()">
+            {% for annee in annees_scolaires %}
+                <option value="{{ annee }}" {% if annee == selected_year %}selected{% endif %}>
+                    {{ annee }}
+                </option>
+            {% endfor %}
+        </select>
+    </form>
+
+    <!-- Bouton pour télécharger les informations en Excel -->
+    <button id="telechargerExcelBtn" class="btn btn-success">Télécharger en Excel</button>
+</div>
+
+
+
 
 <table class="table-bordered">
     <thead>
@@ -120,8 +125,6 @@
     </tbody>
 </table>
 
-<!-- Bouton pour télécharger les informations en Excel -->
-<button id="telechargerExcelBtn" class="btn btn-success">Télécharger en Excel</button>
 
 <!-- Inclure la bibliothèque SheetJS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -130,30 +133,62 @@
 document.getElementById('telechargerExcelBtn').addEventListener('click', function () {
     // Créer un tableau de données pour le fichier Excel
     var data = [];
-    
-    // Ajouter l'en-tête des colonnes
-    data.push(['Matière', 'Crédit', 'Note 1', 'Note 2']);
-    
-    // Fonction pour extraire les données du tableau
-    function extractTableData(tableId) {
-        var table = document.getElementById(tableId);
-        var rows = table.querySelectorAll('tbody tr');
+
+    // Extraire les informations de Nom, Classe, et Année scolaire depuis le premier tableau
+    var nom = document.querySelector('table tbody tr td:nth-child(2)').innerText.trim();  // 2ème colonne : Nom
+    var classe = document.querySelector('table tbody tr td:nth-child(3)').innerText.trim();  // 3ème colonne : Classe
+    var annee = document.querySelector('table tbody tr td:nth-child(4)').innerText.trim();  // 4ème colonne : Année scolaire
+
+    // En-têtes Semestre 1
+    var headersSem1 = ['Matière Semestre 1', 'Crédit Semestre 1', 'Note 1 Semestre 1', 'Note 2 Semestre 1'];
+    // Colonnes vides pour séparer
+    var emptyColumns = ['', ''];
+    // En-têtes Semestre 2
+    var headersSem2 = ['Matière Semestre 2', 'Crédit Semestre 2', 'Note 1 Semestre 2', 'Note 2 Semestre 2'];
+
+    // Ajouter les en-têtes des deux semestres avec les colonnes vides entre eux
+    data.push(headersSem1.concat(emptyColumns).concat(headersSem2));
+
+    // Fonction pour extraire les données des deux tableaux et les fusionner avec une séparation de deux colonnes vides
+    function extractTableData(tableId1, tableId2) {
+        var rowsSem1 = document.getElementById(tableId1).querySelectorAll('tbody tr');
+        var rowsSem2 = document.getElementById(tableId2).querySelectorAll('tbody tr');
         
-        rows.forEach(function (row) {
-            var cols = row.querySelectorAll('td');
-            if (cols.length > 0) {
-                var rowData = [];
-                cols.forEach(function (col) {
+        var maxRows = Math.max(rowsSem1.length, rowsSem2.length); // Nombre maximum de lignes
+
+        for (var i = 0; i < maxRows; i++) {
+            var rowData = [];
+
+            // Extraire les données du Semestre 1 (ou cellules vides si la ligne n'existe pas)
+            if (i < rowsSem1.length) {
+                var colsSem1 = rowsSem1[i].querySelectorAll('td');
+                colsSem1.forEach(function (col) {
                     rowData.push(col.innerText.trim());
                 });
-                data.push(rowData);
+            } else {
+                rowData.push('', '', '', ''); // Lignes vides si pas de correspondance
             }
-        });
+
+            // Ajouter les colonnes vides pour séparer
+            rowData = rowData.concat(emptyColumns);
+
+            // Extraire les données du Semestre 2 (ou cellules vides si la ligne n'existe pas)
+            if (i < rowsSem2.length) {
+                var colsSem2 = rowsSem2[i].querySelectorAll('td');
+                colsSem2.forEach(function (col) {
+                    rowData.push(col.innerText.trim());
+                });
+            } else {
+                rowData.push('', '', '', ''); // Lignes vides si pas de correspondance
+            }
+
+            // Ajouter les données de la ligne fusionnée dans le tableau avec les colonnes vides
+            data.push(rowData);
+        }
     }
 
-    // Extraire les données du Semestre 1 et Semestre 2
-    extractTableData('tableSemestre1');
-    extractTableData('tableSemestre2');
+    // Extraire les données des deux semestres et les combiner avec deux colonnes de séparation
+    extractTableData('tableSemestre1', 'tableSemestre2');
 
     // Créer un nouveau classeur Excel
     var wb = XLSX.utils.book_new();
@@ -163,22 +198,15 @@ document.getElementById('telechargerExcelBtn').addEventListener('click', functio
     
     // Ajouter la feuille de calcul au classeur
     XLSX.utils.book_append_sheet(wb, ws, "Notes");
-    
-    // Générer et télécharger le fichier Excel
-    XLSX.writeFile(wb, 'notes_etudiant.xlsx');
+
+    // Générer le nom du fichier avec les informations récupérées (Nom, Classe, Année scolaire)
+    var fileName = nom + '_' + classe + '_' + annee + '.xlsx';
+
+    // Télécharger le fichier Excel avec le nom généré
+    XLSX.writeFile(wb, fileName);
 });
 </script>
 
-<script>
-    function ActiveLink(){
-        var notesLink = document.getElementById('notes');
-        notesLink.classList.add('active');
-    }
 
-    ActiveLink();
-</script>
 
 {% endblock content %}
-
-
-

@@ -34,16 +34,23 @@
     }
 </style>
 
-<form method="get">
-    <label for="annee_scolaire">Choisir une année scolaire:</label>
-    <select name="annee_scolaire" id="annee_scolaire" onchange="this.form.submit()">
-        {% for annee in annees_scolaires %}
-            <option value="{{ annee }}" {% if annee == selected_year %}selected{% endif %}>
-                {{ annee }}
-            </option>
-        {% endfor %}
-    </select>
-</form>
+
+<div style="display: flex; justify-content: space-between; align-items: center;">
+    <!-- Formulaire pour sélectionner l'année scolaire -->
+    <form method="get" style="margin: 0;">
+        <label for="annee_scolaire">Choisir une année scolaire:</label>
+        <select name="annee_scolaire" id="annee_scolaire" onchange="this.form.submit()">
+            {% for annee in annees_scolaires %}
+                <option value="{{ annee }}" {% if annee == selected_year %}selected{% endif %}>
+                    {{ annee }}
+                </option>
+            {% endfor %}
+        </select>
+    </form>
+
+    <!-- Bouton Télécharger en Excel aligné à droite -->
+    <button id="telechargerExcelBtn" class="btn btn-success" style="margin-left: auto;">Télécharger en Excel</button>
+</div>
 
 <table class="table-bordered">
     <thead>
@@ -116,64 +123,80 @@
     </tbody>
 </table>
 
-<!-- Bouton Télécharger en Excel -->
-<button id="telechargerExcelBtn" class="btn btn-success">Télécharger en Excel</button>
 
 <!-- Inclure la bibliothèque SheetJS pour générer des fichiers Excel -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <script>
 document.getElementById('telechargerExcelBtn').addEventListener('click', function () {
-    // Créer un tableau qui contiendra les données du fichier Excel
+    // Créer un tableau pour contenir les données combinées des deux semestres
     var data = [];
+
+    // Extraire les informations du premier tableau (étudiant)
+    var nomEtudiant = document.querySelector('table tbody tr td:nth-child(2)').innerText.trim();
+    var classeEtudiant = document.querySelector('table tbody tr td:nth-child(3)').innerText.trim();
+    var anneeScolaire = document.querySelector('table tbody tr td:nth-child(4)').innerText.trim();
+
+    // Ajouter l'en-tête pour Semestre 1 et Semestre 2 côte à côte
+    data.push(['Matière S1', 'Crédit S1', 'Note 1 S1', 'Note 2 S1', '', 'Matière S2', 'Crédit S2', 'Note 1 S2', 'Note 2 S2']);
     
-    // Ajouter l'en-tête des colonnes
-    data.push(['Matière', 'Crédit', 'Note 1', 'Note 2']);
-    
-    // Fonction pour extraire les données d'un tableau
-    function extractTableData(tableId) {
-        var table = document.getElementById(tableId);
-        var rows = table.querySelectorAll('tbody tr');
+    // Fonction pour extraire les données de deux tableaux simultanément
+    function extractTableDataSideBySide(tableId1, tableId2) {
+        var table1 = document.getElementById(tableId1);
+        var table2 = document.getElementById(tableId2);
         
-        rows.forEach(function (row) {
-            var cols = row.querySelectorAll('td');
-            if (cols.length > 0) {
-                var rowData = [];
-                cols.forEach(function (col) {
+        var rows1 = table1.querySelectorAll('tbody tr');
+        var rows2 = table2.querySelectorAll('tbody tr');
+
+        var maxRows = Math.max(rows1.length, rows2.length);  // Obtenir le plus grand nombre de lignes
+
+        for (var i = 0; i < maxRows; i++) {
+            var rowData = [];
+
+            // Remplir les données du tableau Semestre 1
+            if (rows1[i]) {
+                var cols1 = rows1[i].querySelectorAll('td');
+                cols1.forEach(function (col) {
                     rowData.push(col.innerText.trim());
                 });
-                data.push(rowData);
+            } else {
+                rowData.push('', '', '', '');  // Lignes vides si le Semestre 1 a moins de lignes
             }
-        });
+
+            // Ajout d'une colonne vide pour espacer les deux semestres
+            rowData.push('');
+
+            // Remplir les données du tableau Semestre 2
+            if (rows2[i]) {
+                var cols2 = rows2[i].querySelectorAll('td');
+                cols2.forEach(function (col) {
+                    rowData.push(col.innerText.trim());
+                });
+            } else {
+                rowData.push('', '', '', '');  // Lignes vides si le Semestre 2 a moins de lignes
+            }
+
+            data.push(rowData);  // Ajouter la ligne complète au tableau de données
+        }
     }
 
-    // Extraire les données du tableau du Semestre 1
-    extractTableData('tableSemestre1');
-    
-    // Extraire les données du tableau du Semestre 2
-    extractTableData('tableSemestre2');
+    // Extraire les données des deux tableaux en les joignant côte à côte
+    extractTableDataSideBySide('tableSemestre1', 'tableSemestre2');
 
     // Créer un nouveau classeur Excel
     var wb = XLSX.utils.book_new();
-    
-    // Créer une nouvelle feuille de calcul à partir des données
+
+    // Créer une nouvelle feuille de calcul avec les données extraites
     var ws = XLSX.utils.aoa_to_sheet(data);
-    
+
     // Ajouter la feuille de calcul au classeur
     XLSX.utils.book_append_sheet(wb, ws, "Notes");
 
-    // Générer et télécharger le fichier Excel
-    XLSX.writeFile(wb, 'notes_etudiant.xlsx');
+    // Générer et télécharger le fichier Excel avec le nom dynamique
+    var fileName = nomEtudiant + "_" + classeEtudiant + "_" + anneeScolaire + ".xlsx";
+    XLSX.writeFile(wb, fileName);
 });
 </script>
 
-<script>
-    function ActiveLink(){
-        var notesLink = document.getElementById('notes')
-        notesLink.classList.add('active')
-    }
-
-    ActiveLink()
-</script>
 
 {% endblock content %}
