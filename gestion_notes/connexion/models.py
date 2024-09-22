@@ -37,6 +37,11 @@ class Etudiant(models.Model):
         if not self.annee_scolaire_en_cours:
             annee_debut = int(self.annee_inscription)
             self.annee_scolaire_en_cours = f'{annee_debut}-{annee_debut+1}'
+        
+        if not self.password:
+            self.password = self.matricule
+            self.set_password(self.password)
+        
         super().save(*args, **kwargs)
     
     def update_last_login(self):

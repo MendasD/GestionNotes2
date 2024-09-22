@@ -61,9 +61,12 @@
 
 {% for classe, eleves in etudiants.items %}
 <div id="{{classe}}" class="groupe-classe">
-    <h2 class="mb-4">Liste des étudiants de {{classe}}</h2>
-    
-    <button class="btn btn-success btn-sm mb-2" onclick="telechargerTable('{{classe}}')">Télécharger</button>
+   <div class="row">
+        <div class="col-md-12">
+            <h2 class="d-inline">Liste des étudiants de {{classe}}</h2>
+            <button class="btn btn-success btn-sm d-inline" style="margin-bottom:7px;padding:4px;margin-left:10px;" onclick="telechargerTable('{{classe}}')">Télécharger</button>
+        </div>
+    </div>
 
     <table class="table table-bordered">
         <thead class="thead-light">

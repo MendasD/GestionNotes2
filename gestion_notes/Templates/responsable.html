@@ -12,7 +12,7 @@
 {% endblock sousLiens %}
 
 {% block content %}
-
+   
     <div id="dashboard">
         <button type="button" id="ChargerNotes" class="btn btn-primary" data-bs-toggle="tooltip" title="Permet d'ajouter une nouvelle feuille excel contenant des notes des étudiants" onclick="window.location.href='{% url 'charger_notes' %}'">Charger les notes</button>
         <button type="button" class="btn btn-primary" data-bs-toggle="tooltip" title="Affiche une liste de tous les étudiants de la filière" onclick="window.location.href='{% url 'liste_etudiants' %}'">Liste des étudiants</button>

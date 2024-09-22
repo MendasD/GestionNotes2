@@ -38,7 +38,7 @@ class ResponsableForm(forms.ModelForm):
 class EtudiantForm(forms.ModelForm):
     class Meta:
         model = Etudiant
-        exclude = ('status','annee_scolaire_en_cours','last_login')
+        exclude = ('statut','annee_scolaire_en_cours','last_login','password')
         widgets = {
             'password': forms.PasswordInput(),
         }
