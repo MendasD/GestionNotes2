@@ -112,14 +112,18 @@ def filtrer_matieres(request):
 def ajouter_matiere(request):
     """Ajoute une matière dans la base de données"""
     if request.method == 'POST':
-        form = MatiereForm(request.POST)
+        responsable = Responsable.objects.get(pk=request.session['user_pk'])
+        filiere_responsable = responsable.filiere
+        form = MatiereForm(request.POST,filiere_responsable=filiere_responsable)
         if form.is_valid():
             form.save()
             request.session['last_activity'] = {'name': 'ajouter_matiere', 'time': timezone.now().isoformat()}
             messages.success(request, 'Matière ajoutée avec succès')
             return render(request, 'ajouter_matieres.html', {'form': MatiereForm()})
     else:
-        form = MatiereForm()
+        responsable = Responsable.objects.get(pk=request.session['user_pk'])
+        filiere_responsable = responsable.filiere
+        form = MatiereForm(filiere_responsable=filiere_responsable)
     return render(request, 'ajouter_matieres.html', {'form': form})
 
 def ajouter_matieres(request):
@@ -491,7 +495,9 @@ def modifier_matiere(request):
         de informations qui seront fournies par la méthode GET
     """
     if request.method == 'POST':
-        form = MatiereForm(request.POST)
+        responsable = Responsable.objects.get(pk=request.session['user_pk'])
+        filiere_responsable = responsable.filiere
+        form = MatiereForm(request.POST,filiere_responsable=filiere_responsable)
         matiere = Matiere.objects.get(name=form.data['name'],classe = form.data['classe'])
         form2 = MatiereForm(request.POST, instance=matiere)
         if form2.is_valid():
@@ -504,6 +510,7 @@ def modifier_matiere(request):
             # Si le formulaire n'est pas valide, on renvoie la même page avec les erreurs
             try: 
                 responsable = Responsable.objects.get(pk=request.session['user_pk'])
+                # On filtre les classes pour le select du formulaire html
                 if responsable.filiere == 'AS':
                     classes = ['AS1','AS2','AS3']
                 elif responsable.filiere == 'ISEP':
@@ -557,14 +564,23 @@ def modifier_matiere(request):
                 #matieres = Matiere.objects.filter(semestre=semestre, active=True)
             else:
                 matieres = Matiere.objects.none()
-               
+            
+            # On recupere la filiere du responsable
+            filiere_responsable = responsable.filiere
+
             # On charge les informations avant d'envoyer le formulaire
-            form = MatiereForm(instance=matiere) if matiere else MatiereForm()
+            form = MatiereForm(instance=matiere,filiere_responsable=filiere_responsable) if matiere else MatiereForm(filiere_responsable=filiere_responsable)
 
             return render(request, 'modifier_matiere.html', {'form':form,'matiere': matiere, 'classes': classes,'semestres':semestres, 'matieres': matieres,'selected_matiere':selected_matiere,'selected_classe':selected_classe,'selected_semestre':selected_semestre})
     
     # Au cas où la méthode n'est ni POST ni GET
-    return render(request, 'modifier_matiere.html',{'form':MatiereForm()})
+    try:
+        responsable = Responsable.objects.get(pk=request.session['user_pk'])
+        filiere_responsable = responsable.filiere
+        form = MatiereForm(filiere_responsable=filiere_responsable)
+        return render(request, 'modifier_matiere.html',{'form':form})
+    except Responsable.DoesNotExist:
+        return HttpResponse('Méthode non autorisée')
 
 def ajouter_classe(request):
     """Cette fonction permet d'ajouter une nouvelle classe dans la base de données"""
@@ -850,11 +866,9 @@ def new_message(request):
         try:
             classe_id = request.GET.get('classe_id')
             if classe_id:
-                etudiants = Etudiant.objects.filter(classe__id=classe_id)
+                etudiants = Etudiant.objects.filter(classe__id=classe_id, statut='En cours de formation')
                 selected_class = Classe.objects.get(pk=classe_id)
-                # Convertir les objets Etudiant en dictionnaire (liste d'étudiants sérialisée)
-                #etudiants_data = [{'id': etudiant.id, 'name': etudiant.name} for etudiant in etudiants]
-                #return JsonResponse({'status': 'success','etudiants':etudiants_data})
+                
             else:
                 etudiants = Etudiant.objects.none()
                 selected_class = None
@@ -901,6 +915,9 @@ def new_message(request):
         return redirect('new_message')
         
 def Upgrade_etudiant(request,matricule):
+    """
+        Cette fonction permet de mettre à jour un étudiant spécifique
+    """
     try:
         etudiant = Etudiant.objects.get(pk=matricule) 
         etudiant.Upgrade_etudiant
@@ -910,3 +927,120 @@ def Upgrade_etudiant(request,matricule):
         messages.error(request, "Aucun étudiant avec cet identifiant dans la base.")
         return redirect('liste_etudiants')
     
+def Upgrade_classe(request):
+    """
+        Cette fonction permet de mettre à jour les étudiants d'une classe
+        Faire passer en classe superieur ou diplômer en fonction de la classe actuelle de l'étudiant
+    """
+    if request.method == 'POST':
+        classe_name = request.POST.get('classe')
+        exclude_students = request.POST.getlist('exclude_students')
+        if classe_name:
+            try:
+                classe = Classe.objects.get(name=classe_name)
+                etudiants = Etudiant.objects.filter(classe=classe, statut='En cours de formation')
+                for etudiant in etudiants:
+                    if etudiant.pk not in exclude_students:
+                        etudiant.Upgrade_etudiant
+                messages.success(request, f"étudiants de la classe {classe_name} ont été mis à jour avec succès")
+                return redirect('liste_etudiants')
+            except Classe.DoesNotExist:
+                messages.error(request, "Aucune classe avec ce nom dans la base.")
+                return redirect('liste_etudiants')
+                        
+
+@is_login
+def Responsable_notes(request):
+    """Cette fonction permet d'accéder à la page note de l'interface des responsables"""
+    
+    if request.method == 'GET':
+        try: 
+            responsable = Responsable.objects.get(pk=request.session['user_pk'])
+            if responsable.filiere == 'AS':
+                classes = ['AS1','AS2','AS3']
+            elif responsable.filiere == 'ISEP':
+                classes = ['ISEP1','ISEP2']
+            elif responsable.filiere == 'ISE':
+                classes = ['ISEP3','ISE1-eco','ISE1-maths','ISE2','ISE3']
+        except Responsable.DoesNotExist:
+            classes = Classe.objects.none()
+            messages.error(request, "Vous n'êtes pas autorisé à accéder à cette page.")
+        
+        # On recupere le label de la classe envoyé depuis la méthode get (si disponible)
+        class_name = request.GET.get('classe_name', None)
+        # On recupere le matricule de l'etudiant envoyé depuis la methode get (si disponible)
+        etudiant_id = request.GET.get('etudiant_id', None)
+        
+
+        if etudiant_id:
+            # Si l'étudiant est présent, nos filtres s'interesseront principalement a ce dernier
+            etudiant = Etudiant.objects.get(pk=etudiant_id)
+            notes_etudiant = Note.objects.filter(etudiant=etudiant)
+
+            selected_classe = etudiant.classe.name
+
+            # On recupere la classe correspondante ainsi que les etudiants de cette en classe qui sont en formation
+            classe = Classe.objects.get(name=class_name)
+            etudiants = Etudiant.objects.filter(classe=classe, statut='En cours de formation')
+
+            # Obtenir les annees passees à l'école
+            annees_scolaires = etudiant.years_at_school
+        
+            # Recuperer l'annee selectionner, depuis la methode GET effectuee
+            selected_year = request.GET.get('annee_scolaire', etudiant.annee_scolaire_en_cours)
+        
+            # filtrer les notes de l'etudiant suivant le selected year
+            notes_etudiant_annee = notes_etudiant.filter(annee_scolaire=selected_year)
+
+            class_annee = notes_etudiant_annee.first().classe if notes_etudiant_annee.exists() else None
+            
+            # On recupere toutes les matieres pour la classe correspondante
+            matieres_classe = Matiere.objects.filter(classe=class_annee)
+            
+            # On range les matieres suivant le semestre
+            matieres_semestre1 = matieres_classe.filter(semestre='semestre1')
+            matieres_semestre2 = matieres_classe.filter(semestre='semestre2')
+            
+            # On initialise les dictionnaires pour stocker les notes par matière et semestre
+            notes_par_semestre1 = {}
+            notes_par_semestre2 = {}
+
+            # On remplit les notes pour les matieres du semestre 1
+            for matiere in matieres_semestre1:
+                note1 = notes_etudiant_annee.filter(matiere=matiere, semestre='semestre1', type_note='note1').first()
+                note2 = notes_etudiant_annee.filter(matiere=matiere, semestre='semestre1', type_note='note2').first()
+                notes_par_semestre1[matiere] = [
+                    note1.note if note1 else '/', 
+                    note2.note if note2 else '/'
+                ]
+
+            #  On remplit les notes pour les matieres du semestre 2
+            for matiere in matieres_semestre2:
+                note1 = notes_etudiant_annee.filter(matiere=matiere, semestre='semestre2', type_note='note1').first()
+                note2 = notes_etudiant_annee.filter(matiere=matiere, semestre='semestre2', type_note='note2').first()
+                notes_par_semestre2[matiere] = [
+                    note1.note if note1 else '/', 
+                    note2.note if note2 else '/'
+                ]
+
+            return render(request, 'notes.html', {
+                'selected_etudiant': etudiant,
+                'notes_semestre1': notes_par_semestre1,
+                'notes_semestre2': notes_par_semestre2,
+                'annees_scolaires': annees_scolaires,
+                'selected_year': selected_year,
+                'classe_annee': class_annee,
+                'classes': classes,
+                'selected_classe': selected_classe,
+                'etudiants': etudiants
+            })
+        
+        elif class_name:
+            # On recupere la classe correspondante ainsi que les etudiants de la classe
+            classe = Classe.objects.get(name=class_name)
+            etudiants = Etudiant.objects.filter(classe=classe, statut='En cours de formation')
+            return render(request, 'notes.html', {'etudiants': etudiants, 'classes': classes,'selected_classe':classe.name})
+        else:
+            # On retourne uniquement les classes correspondantes au responsable si ni une classe, ni un étudiant n'est selectionné
+            return render(request, 'notes.html', {'classes': classes})
+

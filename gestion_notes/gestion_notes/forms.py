@@ -20,6 +20,23 @@ class MatiereForm(forms.ModelForm):
         model = Matiere
         fields = '__all__'
 
+    def __init__(self, *args, **kwargs):
+        
+        filiere_responsable = kwargs.pop('filiere_responsable', None)
+        super().__init__(*args, **kwargs)
+
+        # On filtre les classes en fonction de la filiere du responsable
+        if filiere_responsable:
+            if filiere_responsable == 'AS':
+                classes = Classe.objects.filter(name__startswith='AS')
+            elif filiere_responsable == 'ISEP':
+                classes = Classe.objects.filter(name__startswith='ISEP')
+            elif filiere_responsable == 'ISE':
+                classes = Classe.objects.filter(name__startswith='ISE').exclude(name__startswith='ISEP')
+            
+            self.fields['classe'].queryset = classes
+
+
 class ResponsableForm(forms.ModelForm):
     class Meta:
         model = Responsable
@@ -38,14 +55,14 @@ class ResponsableForm(forms.ModelForm):
 class EtudiantForm(forms.ModelForm):
     class Meta:
         model = Etudiant
-        exclude = ('status','annee_scolaire_en_cours','last_login')
+        exclude = ('statut','annee_scolaire_en_cours','last_login','password')
         widgets = {
             'password': forms.PasswordInput(),
         }
 
     def save(self, commit=True):
         etudiant = super().save(commit=False)
-        etudiant.set_password(self.data['password'])
+        etudiant.set_password(self.data['matricule']) # Le matricule est le mot de passe par defaut lors de l'ajout d'un étudiant
         if commit:
             etudiant.save()
         return etudiant

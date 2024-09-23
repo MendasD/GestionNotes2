@@ -60,10 +60,70 @@
 <a href="{% url 'ajouter_etudiant' %}" class="btn btn-success btn-sm float-end"><i class="fa fa-plus-circle"></i> Ajouter un étudiant</a>
 
 {% for classe, eleves in etudiants.items %}
-<div id="{{classe}}" class="groupe-classe">
-    <h2 class="mb-4">Liste des étudiants de {{classe}}</h2>
-    
-    <button class="btn btn-success btn-sm mb-2" onclick="telechargerTable('{{classe}}')">Télécharger</button>
+<div id="{{classe}}" class="groupe-classe" style="margin-bottom:10%;">
+    <div class="row">
+        <div class="col-md-12">
+            <h2 class="d-inline">Liste des étudiants de {{classe}}</h2>
+            <button class="btn btn-success btn-sm d-inline" style="margin-bottom:7px;padding:2px;margin-left:10px;" onclick="telechargerTable('{{classe}}')">Télécharger</button>
+            <a href="{% if classe in cycle1 %}#upgrade_classe_modal-{{classe}}{% else %}#graduate_classe_modal-{{classe}}{% endif %}" matricule="{{eleve.pk}}" class="btn btn-info btn-sm d-inline" style="margin-bottom:7px;padding:3px;margin-left:10px;color:white;" data-bs-toggle="modal" data-bs-toggle="tooltip" title="Faire passer au niveau supérieur ou diplômer les étudiants de {{classe}}" >Upgrade classe</a>
+        </div>
+    </div>
+    <!-- Modal for upgrade classe -->
+    <div class="modal fade" id="upgrade_classe_modal-{{classe}}">
+        <div class="modal-dialog modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="upgradeclasseModalLabel-{{classe}}">Admission de la classe au niveau supérieur</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    Faire passer tous les étudiants au niveau supérieur à l'exception de : <br><br>
+                    <form class="form" method="POST" id="upgradeClasseForm-{{classe}}" action="{% url 'upgrade_classe' %}">
+                        {% csrf_token %}
+                        <input name="classe" class="form-control" value="{{classe}}" style="display:none;">
+                        <select name="exclude_students" type="checkbox" class="form-control" id="" multiple>
+                            <option selected disabled>Sélectionner les étudiants non concernés</option>
+                            {% for eleve in eleves %}
+                                <option value="{{eleve.pk}}">{{eleve.name}}</option>
+                            {% endfor %}
+                        </select>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-success" onclick="document.getElementById('upgradeClasseForm-{{classe}}').submit()" >Confirmer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal for graduate classe -->
+    <div class="modal fade" id="graduate_classe_modal-{{classe}}">
+        <div class="modal-dialog modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="graduateclasseModalLabel-{{classe}}">Diplômation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    Diplômer tous les étudiants à l'exception de: <br><br>
+                    <form class="form" method="POST" id="diplomeClasseForm-{{classe}}" action="{% url 'upgrade_classe' %}">
+                        {% csrf_token %}
+                        <input name="classe" class="form-control" value="{{classe}}" style="display:none;">
+                        <select name="exclude_students" type="checkbox" class="form-control" id="" multiple>
+                        <option selected disabled>Sélectionner les étudiants non concernés</option>
+                            {% for eleve in eleves %}
+                                <option value="{{eleve.pk}}">{{eleve.name}}</option>
+                            {% endfor %}
+                        </select>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-success" onclick="document.getElementById('diplomeClasseForm-{{classe}}').submit()" >Confirmer</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <table class="table table-bordered">
         <thead class="thead-light">
@@ -81,13 +141,13 @@
                 <td>{{eleve.name}}</td>
                 <td>{{selected_annee|default:eleve.annee_scolaire_en_cours}}</td>
                 <td>
-                    <a href="{% url 'detail_etudiant' eleve.pk %}" class="btn btn-info btn-sm">Voir</a>
-                    <a href="{% url 'modifier_etudiant' eleve.pk %}" class="btn btn-warning btn-sm">Modifier</a>
-                    <a href="{% url 'send_message' eleve.pk %}" class="btn btn-success btn-sm">Message</a>
-                    <a href="#delete_modal-{{eleve.pk}}" matricule="{{eleve.pk}}" class="btn btn-danger btn-sm" data-bs-toggle="modal">Supprimer</a>
-                    <a href="{% if classe in cycle1 %}#upgrade_modal-{{eleve.pk}}{% else %}#diplome_modal-{{eleve.pk}}{% endif %}" matricule="{{eleve.pk}}" class="btn btn-info btn-sm" data-bs-toggle="modal">Upgrade</a>
+                    <a href="{% url 'detail_etudiant' eleve.pk %}" class="btn btn-info btn-sm" data-bs-toggle="tooltip" title="Plus de détail sur {{eleve.name}}" >Voir</a>
+                    <a href="{% url 'modifier_etudiant' eleve.pk %}" class="btn btn-warning btn-sm" data-bs-toggle="tooltip" title="Modifier les informations de {{eleve.name}}" >Modifier</a>
+                    <a href="{% url 'send_message' eleve.pk %}" class="btn btn-success btn-sm" data-bs-toggle="tooltip" title="Envoyer un message à {{eleve.name}}" >Message</a>
+                    <a href="#delete_modal-{{eleve.pk}}" matricule="{{eleve.pk}}" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-toggle="tooltip" title="Supprimer {{eleve.name}} de la base" >Supprimer</a>
+                    <a href="{% if classe in cycle1 %}#upgrade_modal-{{eleve.pk}}{% else %}#diplome_modal-{{eleve.pk}}{% endif %}" matricule="{{eleve.pk}}" class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-toggle="tooltip" title="Faire passer {{eleve.name}} en classe supérieur ou signaler qu'il a obtenu son diplôme" >Upgrade</a>
                 </td>
-                <!-- Modal for deletion -->
+                <!-- Modal for suppression -->
                 <div class="modal fade" id="delete_modal-{{eleve.pk}}">
                     <div class="modal-dialog">
                         <div class="modal-content">
@@ -110,7 +170,7 @@
                     <div class="modal-dialog">
                         <div class="modal-content">
                             <div class="modal-header">
-                                <h5 class="modal-title" id="deleteModalLabel-{{eleve.pk}}">Admission en classe supérieure</h5>
+                                <h5 class="modal-title" id="upradeModalLabel-{{eleve.pk}}">Admission en classe supérieure</h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                             </div>
                             <div class="modal-body">
@@ -128,7 +188,7 @@
                     <div class="modal-dialog">
                         <div class="modal-content">
                             <div class="modal-header">
-                                <h5 class="modal-title" id="deleteModalLabel-{{eleve.pk}}">Diplomation</h5>
+                                <h5 class="modal-title" id="diplomeModalLabel-{{eleve.pk}}">Diplomation</h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                             </div>
                             <div class="modal-body">
@@ -155,35 +215,14 @@
 <!-- Inclure la bibliothèque SheetJS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-<script>
-    function telechargerTable(classe) {
-        var data = [];
-        // Ajouter les en-têtes
-        data.push(['Matricule', 'Nom', 'Année Scolaire']);
-        
-        // Extraire les données de la table
-        var table = document.querySelector('#' + classe + ' table tbody');
-        var rows = table.querySelectorAll('tr');
-        
-        rows.forEach(function(row) {
-            var cols = row.querySelectorAll('td');
-            if (cols.length > 0) {
-                var rowData = [];
-                // Ignorer la dernière colonne (Actions)
-                for (var i = 0; i < cols.length - 1; i++) {
-                    rowData.push(cols[i].innerText.trim());
-                }
-                data.push(rowData);
-            }
-        });
-        
-        // Créer un nouveau classeur Excel
-        var wb = XLSX.utils.book_new();
-        var ws = XLSX.utils.aoa_to_sheet(data);
-        XLSX.utils.book_append_sheet(wb, ws, "Liste d'Étudiants");
-        XLSX.writeFile(wb, classe + "_etudiants.xlsx");
-    }
-</script>
+<!-- script pour initialiser les tooltips (messages qui apparaissent quand on survole un element) -->
+<script src="{% static 'javascript/tooltip.js' %}" ></script>
+
+<!-- Inclure la bibliothèque excelJS pour générer des fichiers Excel avec mise en forme des cellules-->
+<script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
+
+<script src="{% static 'javascript/telecharger_liste_classe.js' %}"></script>
+
 
 <script>
     function ActiveLink() {

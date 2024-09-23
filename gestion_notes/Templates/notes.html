@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "base2.html" %}
 {% load static %}
 
 {% block extra_styles %}
@@ -7,7 +7,7 @@
 
 {% block content %}
 <style>
-   /* Styles spécifiques pour le mode sombre */
+    /* Styles spécifiques pour le mode sombre */
     html[data-bs-theme="dark"] table {
         width: 100%;
         border-collapse: collapse;
@@ -32,25 +32,50 @@
     html[data-bs-theme="dark"] tbody tr:hover {
         background-color: #444;
     }
+
+    .search-input {
+        margin-right: 7px;
+    }
 </style>
 
-
 <div style="display: flex; justify-content: space-between; align-items: center;">
-    <!-- Formulaire pour sélectionner l'année scolaire -->
-    <form method="get" style="margin: 0;">
-        <label for="annee_scolaire">Choisir une année scolaire:</label>
-        <select name="annee_scolaire" id="annee_scolaire" onchange="this.form.submit()">
-            {% for annee in annees_scolaires %}
-                <option value="{{ annee }}" {% if annee == selected_year %}selected{% endif %}>
-                    {{ annee }}
-                </option>
-            {% endfor %}
-        </select>
+    <!-- Menu déroulant pour sélectionner l'année académique -->
+    <form method="get" class="form">
+        <div class="row">
+            <select name="classe_name" id="classe" class="col-md-3 search-input" onchange="document.getElementById('etudiant').value='';document.getElementById('annee_scolaire').value='';this.form.submit()">
+                <option disabled selected>Choisir classe</option>
+                {% for classe in classes %}
+                    <option value="{{ classe }}" {% if classe == selected_classe %}selected{% endif %}>
+                        {{ classe }}
+                    </option>
+                {% endfor %}
+            </select>
+            
+            <select name="etudiant_id" id="etudiant" class="col-md-3 search-input" onchange="document.getElementById('annee_scolaire').value='';this.form.submit()">
+                <option disabled selected>Choisir un étudiant</option>
+                {% for etudiant in etudiants %}
+                    <option value="{{ etudiant.pk }}" {% if etudiant == selected_etudiant %}selected{% endif %}>
+                        {{ etudiant.name }}
+                    </option>
+                {% endfor %}
+            </select>
+
+            <select name="annee_scolaire" id="annee_scolaire" class="col-md-3 search-input" onchange="this.form.submit()">
+                <option disabled selected>Choisir une année scolaire</option>
+                {% for annee in annees_scolaires %}
+                    <option value="{{ annee }}" {% if annee == selected_year %}selected{% endif %}>
+                        {{ annee }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
     </form>
 
-    <!-- Bouton Télécharger en Excel aligné à droite -->
-    <button id="telechargerExcelBtn" class="btn btn-success" style="margin-left: auto; margin-bottom: 7px;">Télécharger en Excel</button>
+    <!-- Bouton pour télécharger les informations en Excel -->
+    <button id="telechargerExcelBtn" class="btn btn-success" style="margin-bottom: 7px;">Télécharger en Excel</button>
 </div>
+
+
 
 <table class="table-bordered">
     <thead>
@@ -63,10 +88,14 @@
     </thead>
     <tbody>
         <tr>
-            <td>{{ etudiant.pk }}</td> 
-            <td>{{ etudiant.name }}</td> 
-            <td>{{ classe_annee|default:etudiant.classe}}</td>
-            <td>{{ selected_year }}</td> 
+            {% if selected_etudiant %}
+                <td>{{ selected_etudiant.pk }}</td>
+                <td>{{ selected_etudiant.name }}</td>
+                <td>{{ classe_annee|default:selected_etudiant.classe }}</td>
+                <td>{{ selected_year }}</td>
+            {% else %}
+                <td colspan="4">En attente de sélection</td>
+            {% endif %}
         </tr>
     </tbody>
 </table>
@@ -123,6 +152,7 @@
     </tbody>
 </table>
 
+
 <!-- Inclure la bibliothèque SheetJS pour générer des fichiers Excel -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
@@ -131,5 +161,12 @@
 
 <script src="{% static 'javascript/etudiant_telecharger_notes.js' %}"></script>
 
+<script>
+    function ActiveLink() {
+        var notesLink = document.getElementById('notes');
+        notesLink.classList.add('active');
+    }
+    ActiveLink();
+</script>
 
 {% endblock content %}

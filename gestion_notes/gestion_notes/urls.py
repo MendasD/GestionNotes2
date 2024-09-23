@@ -45,6 +45,7 @@ urlpatterns = [
     path('responsable/ajouter_classe/', views.ajouter_classe, name='ajouter_classe'),
     path('responsable/etudiant/detail/<str:matricule>/',views.detail_etudiant, name='detail_etudiant'),
     path('responsable/etudiant/upgrade/<str:matricule>/',views.Upgrade_etudiant, name='upgrade_etudiant'),
+    path('responsable/classe/upgrade/',views.Upgrade_classe, name='upgrade_classe'),
     path('responsable/etudiant/modifier/<str:matricule>/', views.modifier_etudiant, name='modifier_etudiant'),
     path('responsable/send_message/etudiant/<str:matricule>', views.send_message, name='send_message'),
     path('responsable/etudiant/delete/<str:matricule>/', views.delete_etudiant, name='delete_etudiant'),
@@ -52,6 +53,7 @@ urlpatterns = [
     path('responsable/delete_message/<int:message_id>/',views.responsable_delete_message, name='responsable_delete_message'),
     path('responsable/cacher_message/<int:message_id>/',views.responsable_cacher_message, name='responsable_cacher_message'),
     path('responsable/new_message/',views.new_message,name='new_message'),
+    path('responsable/notes_etudiants/', views.Responsable_notes, name='responsable_notes'),
    
     
    

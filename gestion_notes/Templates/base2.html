@@ -66,7 +66,7 @@
 
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light sticky-top">
-        <a class="navbar-brand" data-bs-toggle="offcanvas" href="#menucache">GestionNotes</a>
+        <a class="navbar-brand" data-bs-toggle="offcanvas" href="#menucache" style="color:blue; "><i class="fa fa-bars" style="font-size:16px; color:blue; font-weight: bold;"></i>GestionNotes</a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
@@ -79,7 +79,7 @@
                     <a class="nav-link" href="{% url 'liste_etudiants' %}" id="etudiants">Étudiants</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="#" id="notes">Notes</a>
+                    <a class="nav-link" href="{% url 'responsable_notes' %}" id="notes">Notes</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'messages' %}" id="messages">Messages</a>
