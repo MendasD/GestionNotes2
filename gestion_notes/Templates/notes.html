@@ -39,9 +39,10 @@
 </style>
 
 <div style="display: flex; justify-content: space-between; align-items: center;">
-    <!-- Menu déroulant pour sélectionner l'année académique -->
+    
     <form method="get" class="form">
         <div class="row">
+            <!-- Menu déroulant pour sélectionner la classe -->
             <select name="classe_name" id="classe" class="col-md-3 search-input" onchange="document.getElementById('etudiant').value='';document.getElementById('annee_scolaire').value='';this.form.submit()">
                 <option disabled selected>Choisir classe</option>
                 {% for classe in classes %}
@@ -50,7 +51,7 @@
                     </option>
                 {% endfor %}
             </select>
-            
+            <!-- Menu déroulant pour sélectionner l'étudiant -->
             <select name="etudiant_id" id="etudiant" class="col-md-3 search-input" onchange="document.getElementById('annee_scolaire').value='';this.form.submit()">
                 <option disabled selected>Choisir un étudiant</option>
                 {% for etudiant in etudiants %}
@@ -59,7 +60,7 @@
                     </option>
                 {% endfor %}
             </select>
-
+            <!-- Menu déroulant pour sélectionner l'année scolaire -->
             <select name="annee_scolaire" id="annee_scolaire" class="col-md-3 search-input" onchange="this.form.submit()">
                 <option disabled selected>Choisir une année scolaire</option>
                 {% for annee in annees_scolaires %}

@@ -80,6 +80,7 @@
                     Faire passer tous les étudiants au niveau supérieur à l'exception de : <br><br>
                     <form class="form" method="POST" id="upgradeClasseForm-{{classe}}" action="{% url 'upgrade_classe' %}">
                         {% csrf_token %}
+                        <!-- Attention: on affiche pas la zone de saisie pour la classe, mais sa valeur est utilisée dans la view de traitement -->
                         <input name="classe" class="form-control" value="{{classe}}" style="display:none;">
                         <select name="exclude_students" type="checkbox" class="form-control" id="" multiple>
                             <option selected disabled>Sélectionner les étudiants non concernés</option>
@@ -108,6 +109,7 @@
                     Diplômer tous les étudiants à l'exception de: <br><br>
                     <form class="form" method="POST" id="diplomeClasseForm-{{classe}}" action="{% url 'upgrade_classe' %}">
                         {% csrf_token %}
+                         <!-- Attention: on affiche pas la zone de saisie pour la classe, mais sa valeur est utilisée dans la view de traitement -->
                         <input name="classe" class="form-control" value="{{classe}}" style="display:none;">
                         <select name="exclude_students" type="checkbox" class="form-control" id="" multiple>
                         <option selected disabled>Sélectionner les étudiants non concernés</option>
