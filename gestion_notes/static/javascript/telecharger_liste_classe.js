@@ -86,3 +86,59 @@ function telechargerTable(classe) {
     XLSX.writeFile(wb, classe + "_etudiants.xlsx");
 }
 */
+
+
+/*
+Pour remplir une maquette excel existante avant de la telecharger
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Remplir et Télécharger Excel</title>
+</head>
+<body>
+
+    <button id="downloadExcel">Télécharger le fichier Excel modifié</button>
+
+    <script>
+        document.getElementById('downloadExcel').addEventListener('click', async function() {
+            // Créer un nouveau workbook Excel
+            var workbook = new ExcelJS.Workbook();
+
+            // Charger le fichier Excel existant (la maquette dans votre projet)
+            await fetch('/path/to/your/excel/template.xlsx')  // Remplacez avec le bon chemin vers votre maquette
+                .then(response => response.arrayBuffer())
+                .then(data => {
+                    return workbook.xlsx.load(data);
+                });
+
+            // Sélectionner la feuille de calcul que vous souhaitez modifier (par index ou par nom)
+            var worksheet = workbook.getWorksheet(1);  // Utilisez le nom ou l'index (commence à 1)
+
+            // Remplir les cellules avec des données
+            worksheet.getCell('A2').value = "Nouvelle valeur A2";
+            worksheet.getCell('B2').value = "Nouvelle valeur B2";
+            worksheet.getCell('C2').value = 42;  // Un exemple de valeur numérique
+
+            // Générer le fichier Excel modifié et préparer le téléchargement
+            workbook.xlsx.writeBuffer().then(function(buffer) {
+                // Créer un Blob et déclencher le téléchargement
+                var blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+                var link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'maquette_modifiee.xlsx';  // Nom du fichier téléchargé
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+        });
+    </script>
+
+</body>
+</html>
+
+
+*/
