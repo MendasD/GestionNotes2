@@ -64,8 +64,9 @@
     <div class="row">
         <div class="col-md-12">
             <h2 class="d-inline">Liste des étudiants de {{classe}}</h2>
-            <button class="btn btn-success btn-sm d-inline" style="margin-bottom:7px;padding:2px;margin-left:10px;" onclick="telechargerTable('{{classe}}')">Télécharger</button>
-            <a href="{% if classe in cycle1 %}#upgrade_classe_modal-{{classe}}{% else %}#graduate_classe_modal-{{classe}}{% endif %}" matricule="{{eleve.pk}}" class="btn btn-info btn-sm d-inline" style="margin-bottom:7px;padding:3px;margin-left:10px;color:white;" data-bs-toggle="modal" data-bs-toggle="tooltip" title="Faire passer au niveau supérieur ou diplômer les étudiants de {{classe}}" >Upgrade classe</a>
+            <i class="fa fa-download" onclick="telechargerTable('{{classe}}')" style="margin-bottom:7px;padding:2px;margin-left:10px;color:blue;font-size:25px;cursor:pointer;" data-bs-toggle="tooltip" title="Télécharger la liste des étudiants de {{classe}}"></i>
+            <i class="fa fa-trophy" href="{% if classe in cycle1 %}#upgrade_classe_modal-{{classe}}{% else %}#graduate_classe_modal-{{classe}}{% endif %}" matricule="{{eleve.pk}}" style="margin-bottom:7px;padding:3px;margin-left:10px;color:green; font-size:25px;cursor:pointer;" data-bs-toggle="modal" data-bs-toggle="tooltip" title="Faire passer au niveau supérieur ou diplômer les étudiants de {{classe}}"></i>
+            <!-- <a href="{% if classe in cycle1 %}#upgrade_classe_modal-{{classe}}{% else %}#graduate_classe_modal-{{classe}}{% endif %}" matricule="{{eleve.pk}}" class="btn btn-info btn-sm d-inline" style="margin-bottom:7px;padding:3px;margin-left:10px;color:white;" data-bs-toggle="modal" data-bs-toggle="tooltip" title="Faire passer au niveau supérieur ou diplômer les étudiants de {{classe}}" >Upgrade classe</a> -->
         </div>
     </div>
     <!-- Modal for upgrade classe -->
@@ -143,11 +144,16 @@
                 <td>{{eleve.name}}</td>
                 <td>{{selected_annee|default:eleve.annee_scolaire_en_cours}}</td>
                 <td>
-                    <a href="{% url 'detail_etudiant' eleve.pk %}" class="btn btn-info btn-sm" data-bs-toggle="tooltip" title="Plus de détail sur {{eleve.name}}" >Voir</a>
-                    <a href="{% url 'modifier_etudiant' eleve.pk %}" class="btn btn-warning btn-sm" data-bs-toggle="tooltip" title="Modifier les informations de {{eleve.name}}" >Modifier</a>
-                    <a href="{% url 'send_message' eleve.pk %}" class="btn btn-success btn-sm" data-bs-toggle="tooltip" title="Envoyer un message à {{eleve.name}}" >Message</a>
-                    <a href="#delete_modal-{{eleve.pk}}" matricule="{{eleve.pk}}" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-toggle="tooltip" title="Supprimer {{eleve.name}} de la base" >Supprimer</a>
-                    <a href="{% if classe in cycle1 %}#upgrade_modal-{{eleve.pk}}{% else %}#diplome_modal-{{eleve.pk}}{% endif %}" matricule="{{eleve.pk}}" class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-toggle="tooltip" title="Faire passer {{eleve.name}} en classe supérieur ou signaler qu'il a obtenu son diplôme" >Upgrade</a>
+                    <a href="{% url 'detail_etudiant' eleve.pk %}"><i class="fa fa-eye"  style="font-size:25px;margin-left:10px;color:green;cursor:pointer;" data-bs-toggle="tooltip" title="Plus de détail sur {{eleve.name}}" ></i></a>
+                    <!-- <a href="{% url 'detail_etudiant' eleve.pk %}" class="btn btn-info btn-sm" data-bs-toggle="tooltip" title="Plus de détail sur {{eleve.name}}" >Voir</a> -->
+                    <a href="{% url 'modifier_etudiant' eleve.pk %}"><i class="fa fa-edit"  style="font-size:25px;margin-left:10px;color:#007bff;cursor:pointer;" class="btn btn-warning btn-sm" data-bs-toggle="tooltip" title="Modifier les informations de {{eleve.name}}"></i></a>
+                    <!-- <a href="{% url 'modifier_etudiant' eleve.pk %}" class="btn btn-warning btn-sm" data-bs-toggle="tooltip" title="Modifier les informations de {{eleve.name}}" >Modifier</a> -->
+                    <a href="{% url 'send_message' eleve.pk %}"><i class="fa fa-comments"  style="font-size:25px;margin-left:10px;color:blue;cursor:pointer;" data-bs-toggle="tooltip" title="Envoyer un message à {{eleve.name}}"></i></a>
+                    <!-- <a href="{% url 'send_message' eleve.pk %}" class="btn btn-success btn-sm" data-bs-toggle="tooltip" title="Envoyer un message à {{eleve.name}}" >Message</a> -->
+                    <i class="fa fa-trash" href="#delete_modal-{{eleve.pk}}" style="font-size:25px;margin-left:10px;color:red;cursor:pointer;" matricule="{{eleve.pk}}" data-bs-toggle="modal" data-bs-toggle="tooltip" title="Supprimer {{eleve.name}} de la base"></i>
+                    <!-- <a href="#delete_modal-{{eleve.pk}}" matricule="{{eleve.pk}}" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-toggle="tooltip" title="Supprimer {{eleve.name}} de la base" >Supprimer</a> -->
+                    <i class="fa fa-arrow-up" style="font-size:25px;margin-left:10px;color:green;cursor:pointer;" href="{% if classe in cycle1 %}#upgrade_modal-{{eleve.pk}}{% else %}#diplome_modal-{{eleve.pk}}{% endif %}" matricule="{{eleve.pk}}" data-bs-toggle="modal" data-bs-toggle="tooltip" title="Faire passer {{eleve.name}} en classe supérieur ou signaler qu'il a obtenu son diplôme"></i>
+                    <!-- <a href="{% if classe in cycle1 %}#upgrade_modal-{{eleve.pk}}{% else %}#diplome_modal-{{eleve.pk}}{% endif %}" matricule="{{eleve.pk}}" class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-toggle="tooltip" title="Faire passer {{eleve.name}} en classe supérieur ou signaler qu'il a obtenu son diplôme" >Upgrade</a> -->
                 </td>
                 <!-- Modal for suppression -->
                 <div class="modal fade" id="delete_modal-{{eleve.pk}}">
