@@ -37,9 +37,9 @@ document.getElementById('telechargerExcelBtn').addEventListener('click', functio
     worksheet.addRow([]);
 
     // Ajouter l'en-tête des matières
-    worksheet.addRow(['Matière', 'Crédit', 'Note 1', 'Note 2']);
+    worksheet.addRow(['Matière', 'Crédit', 'Note 1', 'Note 2','Moyenne']);
     worksheet.getRow(5).font = { bold: true };
-    ['A','B','C','D'].forEach((i) => {
+    ['A','B','C','D','E'].forEach((i) => {
         worksheet.getCell(`${i}5`).fill = {
             type: 'pattern', // indique que l'utilisation d'un motif de remplissage
             pattern: 'solid', // pour indiquer l'utilisation d'une couleur unie (uniforme, i.e sans variance de teinte)
@@ -54,7 +54,7 @@ document.getElementById('telechargerExcelBtn').addEventListener('click', functio
         var rows = table.querySelectorAll('tbody tr');
         // Ajout du semestre
         var row = worksheet.addRow([semester]);  
-        worksheet.mergeCells(`A${row.number}:D${row.number}`);  // Fusionner de A à D sur la ligne courante
+        worksheet.mergeCells(`A${row.number}:E${row.number}`);  // Fusionner de A à D sur la ligne courante
         worksheet.getCell(`A${row.number}`).alignment = { horizontal: 'center' };  // Centrer le texte
         worksheet.getCell(`A${row.number}`).font = { bold: true };  // Mettre le texte en gras
 

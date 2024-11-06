@@ -4,6 +4,68 @@ from django.core.validators import RegexValidator
 from django.core.exceptions import ValidationError
 
 
+SEXE_CHOICES = [
+    ('M', 'Masculin'),
+    ('F', 'Féminin'),
+]
+
+NATIONALITY_CHOICES = [
+    ('afrique_du_sud', 'Sud-Africaine'),
+    ('algerie', 'Algérienne'),
+    ('angola', 'Angolaise'),
+    ('benin', 'Béninoise'),
+    ('botswana', 'Botswanaise'),
+    ('burkina_faso', 'Burkinabé'),
+    ('burundi', 'Burundaise'),
+    ('cameroun', 'Camerounaise'),
+    ('cap_vert', 'Cap-Verdienne'),
+    ('comores', 'Comorienne'),
+    ('congo_brazzaville', 'Congolaise (Brazzaville)'),
+    ('congo_kinshasa', 'Congolaise (Kinshasa)'),
+    ('cote_d_ivoire', 'Ivoirienne'),
+    ('djibouti', 'Djiboutienne'),
+    ('egypte', 'Égyptienne'),
+    ('erythree', 'Érythréenne'),
+    ('eswatini', 'Swazie'),
+    ('ethiopie', 'Éthiopienne'),
+    ('gabon', 'Gabonaise'),
+    ('gambie', 'Gambienne'),
+    ('ghana', 'Ghanéenne'),
+    ('guinee', 'Guinéenne'),
+    ('guinee_bissau', 'Bissau-Guinéenne'),
+    ('guinee_equatoriale', 'Équatoguinéenne'),
+    ('kenya', 'Kényane'),
+    ('lesotho', 'Lesothane'),
+    ('liberia', 'Libérienne'),
+    ('libye', 'Libyenne'),
+    ('madagascar', 'Malgache'),
+    ('malawi', 'Malawite'),
+    ('mali', 'Malienne'),
+    ('maroc', 'Marocaine'),
+    ('maurice', 'Mauricienne'),
+    ('mauritanie', 'Mauritanienne'),
+    ('mozambique', 'Mozambicaine'),
+    ('namibie', 'Namibienne'),
+    ('niger', 'Nigérienne'),
+    ('nigeria', 'Nigériane'),
+    ('ouganda', 'Ougandaise'),
+    ('rwanda', 'Rwandaise'),
+    ('sao_tome_et_principe', 'Santoméenne'),
+    ('senegal', 'Sénégalaise'),
+    ('seychelles', 'Seychelloise'),
+    ('sierra_leone', 'Sierraléonaise'),
+    ('somalie', 'Somalienne'),
+    ('soudan', 'Soudanaise'),
+    ('soudan_du_sud', 'Sud-Soudanaise'),
+    ('tanzanie', 'Tanzanienne'),
+    ('tchad', 'Tchadienne'),
+    ('togo', 'Togolaise'),
+    ('tunisie', 'Tunisienne'),
+    ('zambie', 'Zambienne'),
+    ('zimbabwe', 'Zimbabwéenne'),
+   
+]
+
 class NoteUploadForm(forms.Form):
     fichier_excel = forms.FileField(label="Choisir un fichier Excel")
     matiere = forms.ModelChoiceField(queryset=Matiere.objects.all(), label="Matière")
@@ -30,9 +92,11 @@ class MatiereForm(forms.ModelForm):
             if filiere_responsable == 'AS':
                 classes = Classe.objects.filter(name__startswith='AS')
             elif filiere_responsable == 'ISEP':
-                classes = Classe.objects.filter(name__startswith='ISEP')
+                classes = Classe.objects.filter(name__startswith='ISEP').exclude(name__startswith='ISEP3')
+            elif filiere_responsable == 'ISE1':
+                classes = Classe.objects.filter(name__startswith='ISE1',name='ISEP3')
             elif filiere_responsable == 'ISE':
-                classes = Classe.objects.filter(name__startswith='ISE').exclude(name__startswith='ISEP')
+                classes = Classe.objects.filter(name__startswith='ISE').exclude(name__startswith='ISEP').exclude(name__startswith='ISE1')
             
             self.fields['classe'].queryset = classes
 
@@ -55,9 +119,14 @@ class ResponsableForm(forms.ModelForm):
 class EtudiantForm(forms.ModelForm):
     class Meta:
         model = Etudiant
-        exclude = ('statut','annee_scolaire_en_cours','last_login','password')
+        exclude = ('statut','annee_scolaire_en_cours','last_login','password','annee_exclusion','annee_diplomation','nombre_redoublage')
         widgets = {
             'password': forms.PasswordInput(),
+            'sexe': forms.Select(choices=SEXE_CHOICES),
+            'nationalite': forms.Select(choices=NATIONALITY_CHOICES),
+            'date_naissance': forms.DateInput(attrs={'type': 'date'}),
+            'annee_inscription': forms.NumberInput(attrs={'type': 'number', 'min': 1990, 'max': 2200})
+           
         }
 
     def save(self, commit=True):
@@ -73,6 +142,11 @@ class EtudiantUpdateForm(forms.ModelForm):
         exclude = ('last_login','matricule')
         widgets = {
             'password': forms.PasswordInput(),
+            'sexe': forms.Select(choices=SEXE_CHOICES),
+            'nationalite': forms.Select(choices=NATIONALITY_CHOICES),
+            'date_naissance': forms.DateInput(attrs={'type': 'date'}),
+            'annee_inscription': forms.NumberInput(attrs={'type': 'number', 'min': 1990, 'max': 2200})
+           
 
         }
 

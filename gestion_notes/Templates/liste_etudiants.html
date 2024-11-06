@@ -34,7 +34,7 @@
     }
 </style>
 
-<form id="search-form" class="form" method='get'>
+<form id="search-form" class="form" method='get' onsubmit="event.preventDefault();">
     <div class="row">
         <select name="classe" id="choix-classe" class="col-md-3 search-input" onchange="selectClasse()">
             <option disabled selected>Choisir une classe</option>
@@ -42,7 +42,7 @@
                 <option value="{{classe}}" {% if classe == selected_classe %}selected{% endif %}>{{classe}}</option>
             {% endfor %}
         </select>
-        <select name="annee" class="col-md-3 search-input" onchange="this.form.submit()">
+        <select name="annee" id="choix-annee" class="col-md-3 search-input" onchange="this.form.submit()">
             <option disabled selected>Choisir une année</option>
             {% for annee in annees %}
                 <option value="{{annee}}" {% if annee == selected_annee %}selected{% endif %}>{{annee}}</option>
@@ -55,6 +55,14 @@
             {% endfor %}
         </select>
     </div>
+    <!-- <button class="btn btn-primary btn-sm " onclick="window.location.href = `${window.location.origin}/responsable/notes_etudiants/telecharger_recapitulatif/?annee_scolaire=${document.getElementById('choix-annee').value}&classe=${document.getElementById('choix-classe').value}`;"> Telecharger recapitulatif de la classe</button> -->
+    <i  class="fa fa-download fa-lg text-secondary float-start"
+        data-bs-toggle="tooltip"
+        title="Télécharger le fichier récapitulatif de la classe sélectionnée, pour l'année sélectionnée."
+        style="cursor: pointer; margin-top: 15px; font-size: 30px;"
+        onclick="window.location.href = `${window.location.origin}/responsable/notes_etudiants/telecharger_recapitulatif/?annee_scolaire=${document.getElementById('choix-annee').value}&classe=${document.getElementById('choix-classe').value}`">
+    </i>
+   
     <a href="{% url 'liste_etudiants' %}" class="btn btn-primary btn-sm float-end"> Effacer</a>
 </form><br><br>
 <a href="{% url 'ajouter_etudiant' %}" class="btn btn-success btn-sm float-end"><i class="fa fa-plus-circle"></i> Ajouter un étudiant</a>
@@ -65,8 +73,10 @@
         <div class="col-md-12">
             <h2 class="d-inline">Liste des étudiants de {{classe}}</h2>
             <i class="fa fa-download" onclick="telechargerTable('{{classe}}')" style="margin-bottom:7px;padding:2px;margin-left:10px;color:blue;font-size:25px;cursor:pointer;" data-bs-toggle="tooltip" title="Télécharger la liste des étudiants de {{classe}}"></i>
+            {% if type == "" %}
             <i class="fa fa-trophy" href="{% if classe in cycle1 %}#upgrade_classe_modal-{{classe}}{% else %}#graduate_classe_modal-{{classe}}{% endif %}" matricule="{{eleve.pk}}" style="margin-bottom:7px;padding:3px;margin-left:10px;color:green; font-size:25px;cursor:pointer;" data-bs-toggle="modal" data-bs-toggle="tooltip" title="Faire passer au niveau supérieur ou diplômer les étudiants de {{classe}}"></i>
             <!-- <a href="{% if classe in cycle1 %}#upgrade_classe_modal-{{classe}}{% else %}#graduate_classe_modal-{{classe}}{% endif %}" matricule="{{eleve.pk}}" class="btn btn-info btn-sm d-inline" style="margin-bottom:7px;padding:3px;margin-left:10px;color:white;" data-bs-toggle="modal" data-bs-toggle="tooltip" title="Faire passer au niveau supérieur ou diplômer les étudiants de {{classe}}" >Upgrade classe</a> -->
+             {% endif %}
         </div>
     </div>
     <!-- Modal for upgrade classe -->
@@ -133,7 +143,7 @@
             <tr>
                 <th>Matricule</th>
                 <th>Nom</th>
-                <th>Année Scolaire</th>
+                <th>Année Scolaire {{type}}</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -152,8 +162,11 @@
                     <!-- <a href="{% url 'send_message' eleve.pk %}" class="btn btn-success btn-sm" data-bs-toggle="tooltip" title="Envoyer un message à {{eleve.name}}" >Message</a> -->
                     <i class="fa fa-trash" href="#delete_modal-{{eleve.pk}}" style="font-size:25px;margin-left:10px;color:red;cursor:pointer;" matricule="{{eleve.pk}}" data-bs-toggle="modal" data-bs-toggle="tooltip" title="Supprimer {{eleve.name}} de la base"></i>
                     <!-- <a href="#delete_modal-{{eleve.pk}}" matricule="{{eleve.pk}}" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-toggle="tooltip" title="Supprimer {{eleve.name}} de la base" >Supprimer</a> -->
+                    {% if type == "" %}
                     <i class="fa fa-arrow-up" style="font-size:25px;margin-left:10px;color:green;cursor:pointer;" href="{% if classe in cycle1 %}#upgrade_modal-{{eleve.pk}}{% else %}#diplome_modal-{{eleve.pk}}{% endif %}" matricule="{{eleve.pk}}" data-bs-toggle="modal" data-bs-toggle="tooltip" title="Faire passer {{eleve.name}} en classe supérieur ou signaler qu'il a obtenu son diplôme"></i>
                     <!-- <a href="{% if classe in cycle1 %}#upgrade_modal-{{eleve.pk}}{% else %}#diplome_modal-{{eleve.pk}}{% endif %}" matricule="{{eleve.pk}}" class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-toggle="tooltip" title="Faire passer {{eleve.name}} en classe supérieur ou signaler qu'il a obtenu son diplôme" >Upgrade</a> -->
+                    <i class="fa fa-arrow-down" href="#degrade_modal-{{eleve.pk}}" style="font-size:25px;margin-left:10px;color:red;cursor:pointer;" matricule="{{eleve.pk}}" data-bs-toggle="modal" data-bs-toggle="tooltip" title="Faire redoubler {{eleve.name}} "></i>
+                    {% endif %}
                 </td>
                 <!-- Modal for suppression -->
                 <div class="modal fade" id="delete_modal-{{eleve.pk}}">
@@ -173,6 +186,26 @@
                         </div>
                     </div>
                 </div>
+
+                 <!-- Modal for degrade -->
+                <div class="modal fade" id="degrade_modal-{{eleve.pk}}">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="deleteModalLabel-{{eleve.pk}}">Confirmation</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                Voulez-vous vraiment faire reprendre l'étudiant {{eleve.name}}  ?
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                <a href="{% url 'degrade_etudiant' eleve.pk %}" class="btn btn-danger">Confirmer </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Modal for upgrade -->
                 <div class="modal fade" id="upgrade_modal-{{eleve.pk}}">
                     <div class="modal-dialog">
@@ -219,6 +252,10 @@
     </table> 
 </div>   
 {% endfor %}
+
+
+
+
 
 <!-- Inclure la bibliothèque SheetJS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>

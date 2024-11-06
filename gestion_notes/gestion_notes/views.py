@@ -3,7 +3,7 @@ from django.http import HttpResponse, Http404, FileResponse
 from urllib.parse import quote  
 from django.contrib import messages
 import pandas as pd
-from connexion.models import Etudiant, Note, Matiere, Classe, Responsable, Message, FichiersJoints
+from connexion.models import Etudiant, Note, Matiere, Classe, Responsable, Message, FichiersJoints, Moyenne
 from .forms import NoteUploadForm, MatiereForm, ResponsableForm, EtudiantForm, ClasseForm, EtudiantUpdateForm, OneMessageForm
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -13,8 +13,45 @@ from django.utils import timezone
 from django.contrib.auth.hashers import check_password,make_password
 import json
 import os
-from django.http import HttpResponse
-from django.http import Http404
+import openpyxl 
+from openpyxl import Workbook
+import io
+
+
+
+# Verifie que le paramètre est un numérique compris entre  0 et 1
+def is_float_between_0_and_1(value):
+    """ Vérifie que la valeur est un float compris entre 0 et 1 """
+    try:
+        val = float(value)
+    except ValueError:
+        return False
+    return 0 <= val <= 1
+
+# Verifie que le paramètre est un numérique compris entre  0 et 1
+def is_float_between_0_and_20(value):
+    """ Vérifie que la valeur est un float positif entre 0 et 20"""
+    try:
+        val = float(value)
+    except ValueError:
+        return False
+    return 0 <= val <= 20
+
+def supprimer_notes_deja_ajoutees(matiere, annee_scolaire, classe, compteur):
+    """ En cas d_erreurs lors de l_ajout des notes, 
+    Permet de supprimer les notes déjà ajoutées jusque là
+    
+    attrs : 
+        compteur : compte le nombre de notes déjà ajoutées
+        matiere : la matière concernée
+        annee_scolaire : l'année scolaire concernée
+        classe : la classe concernée
+    """
+
+    notes = Note.objects.filter(matiere = matiere, annee_scolaire = annee_scolaire, classe = classe).order_by('-id')
+    notes_a_supprimer = notes[:compteur]
+    for note in notes_a_supprimer:
+        note.delete()
 
 
 @csrf_exempt
@@ -36,42 +73,304 @@ def ajouter_notes(request):
             classe = Classe.objects.get(name=classeName)
             matiere = Matiere.objects.get(id=matiereId)
 
+            fichier_is_valid = True
+
             try:
                 df = pd.read_excel(fichier)
+
+                # On vérifie d'abord la conformité des données du fichier excel
+
                 for index, row in df.iterrows():
                     matricule = row['matricule']
                     try:
                         etudiant = Etudiant.objects.get(matricule=matricule)
                     except Etudiant.DoesNotExist:
+                        fichier_is_valid = False
                         messages.error(request, f"L'étudiant avec le matricule {matricule} n'existe pas.")
                         print("erreur 1")
                         return JsonResponse({'status': 'error', 'message': f"L'étudiant avec le matricule {matricule} n'existe pas."}, status=404)
-                    
+
+
                     # Création des instances de Note pour chaque type de note
                     if 'note1' in df.columns:
-                        Note.objects.create(
-                            etudiant=etudiant,
-                            matiere=matiere,
-                            classe=classe,
-                            note=row['note1'],
-                            type_note='note1',
-                            semestre=semestre,
-                            annee_scolaire=annee_scolaire
-                        )
+                        try:
+                            note2 = Note.objects.get(etudiant=etudiant,matiere=matiere, type_note='note2',annee_scolaire=annee_scolaire)
+                            print("erreur test")
+                            poids2 = note2.poids
+
+                            if 'poids1' in df.columns:
+                                poids1 = row['poids1']
+                                if not is_float_between_0_and_1(poids1):
+
+                                    # On supprime les notes déjà ajoutées jusque là
+                                    #supprimer_notes_deja_ajoutees(matiere, annee_scolaire, classe, compteur)
+                                    fichier_is_valid = False
+
+
+                                    messages.error(request, "Le poids doit être un réel compris entre 0 et 1.")
+                                    print("erreur 2")
+                                    return JsonResponse({'status': 'error', 'message': "Le poids doit être compris entre 0 et 1.."}, status=400)
+                                else:
+                                    if poids1 + poids2 != float(1):
+
+                                        # On supprime les notes déjà ajoutées jusque là
+                                        #supprimer_notes_deja_ajoutees(matiere, annee_scolaire, classe, compteur)
+                                        fichier_is_valid = False
+
+                                        messages.error(request, "La somme des poids des notes n'est pas égale à 1.")
+                                        print("erreur 2")
+                                        return JsonResponse({'status': 'error', 'message': "La somme des poids des notes n'est pas égale à 1."}, status=400)
+                                    else:
+                                        if not is_float_between_0_and_20(row['note1']):
+                                            fichier_is_valid = False
+                                            messages.error(request, "La note doit être un réel entre 0 et 20")
+                                            return JsonResponse({'status': 'error', 'message': "La note doit être un réel entre 0 et 20"}, status=400)
+                                       
+                            else:
+                                # On supprime les notes déjà ajoutées jusque là
+                                #supprimer_notes_deja_ajoutees(matiere, annee_scolaire, classe, compteur)
+                                fichier_is_valid = False
+
+                                messages.error(request, "Le poids de la note 1 n'est pas spécifié.")
+                                print("erreur 2")
+                                return JsonResponse({'status': 'error', 'message': "Le poids de la note 1 n'est pas spécifié."}, status=400)
+
+                        except Note.DoesNotExist:
+                            if 'poids1' in df.columns:
+                                poids1 = row['poids1']
+                                if not is_float_between_0_and_1(poids1):
+
+                                    # On supprime les notes déjà ajoutées jusque là
+                                    #supprimer_notes_deja_ajoutees(matiere, annee_scolaire, classe, compteur)
+                                    fichier_is_valid = False
+
+                                    messages.error(request, "Le poids doit être un réel compris entre 0 et 1.")
+                                    print("erreur 2")
+                                    return JsonResponse({'status': 'error', 'message': "Le poids doit être compris entre 0 et 1.."}, status=400)
+                                else:
+                                    if 'poids2' in df.columns:
+                                        if is_float_between_0_and_1(row['poids2']):
+                                            if poids1 + row['poids2'] != float(1):
+                                                fichier_is_valid = False
+                                                messages.error(request, "La somme des deux poids ne donne pas 1")
+                                                return JsonResponse({'status': 'error', 'message': "La somme des deux poids ne donne pas 1"}, status=400)
+                                    
+                                    if not is_float_between_0_and_20(row['note1']):
+                                        fichier_is_valid = False
+                                        messages.error(request, "La note doit être un réel entre 0 et 20")
+                                        return JsonResponse({'status': 'error', 'message': "La note doit être un réel entre 0 et 20"}, status=400)
+                            else:
+                                fichier_is_valid = False
+
+                                messages.error(request, "Le poids de la note 1 n'est pas spécifié.")
+                                print("erreur 2")
+                                return JsonResponse({'status': 'error', 'message': "Le poids de la note 1 n'est pas spécifié."}, status=400)
 
                     if 'note2' in df.columns:
-                        Note.objects.create(
-                            etudiant=etudiant,
-                            matiere=matiere,
-                            classe=classe,
-                            note=row['note2'],
-                            type_note='note2',
-                            semestre=semestre,
-                            annee_scolaire=annee_scolaire
-                        )
-                request.session['last_activity'] = {'name': 'ajouter_notes', 'time': timezone.now().isoformat()}
-                messages.success(request, "Les notes ont été importées avec succès.")
-                return JsonResponse({'status': 'success'})
+                        try:
+                            note1 = Note.objects.get(etudiant=etudiant,matiere=matiere, type_note='note1',annee_scolaire=annee_scolaire)
+                            poids1 = note1.poids
+
+                            if 'poids2' in df.columns:
+                                poids2 = row['poids2']
+                                if not is_float_between_0_and_1(poids2):
+                                    fichier_is_valid = False
+
+                                    messages.error(request, "Le poids doit être un réel compris entre 0 et 1.")
+                                    print("erreur 2")
+                                    return JsonResponse({'status': 'error', 'message': "Le poids doit être compris entre 0 et 1.."}, status=400)
+                                else:
+                                    if poids1 + poids2 != float(1):
+                                        fichier_is_valid = False
+
+                                        messages.error(request, "La somme des poids des notes n'est pas égale à 1.")
+                                        print("erreur 2")
+                                        return JsonResponse({'status': 'error', 'message': "La somme des poids des notes n'est pas égale à 1."}, status=400)
+                                    else:
+                                       if not is_float_between_0_and_20(row['note2']):
+                                            fichier_is_valid = False
+                                            messages.error(request, "La note doit être un réel entre 0 et 20")
+                                            return JsonResponse({'status': 'error', 'message': "La note doit être un réel entre 0 et 20"}, status=400)
+                            else:
+                                fichier_is_valid = False
+
+                                messages.error(request, "Le poids de la note 1 n'est pas spécifié.")
+                                print("erreur 2")
+                                return JsonResponse({'status': 'error', 'message': "Le poids de la note 1 n'est pas spécifié."}, status=400)
+
+                        except Note.DoesNotExist:
+                            if 'poids2' in df.columns:
+                                poids2 = row['poids2']
+                                if not is_float_between_0_and_1(poids2):
+                                    fichier_is_valid = False
+                                        
+                                    messages.error(request, "Le poids doit être un réel compris entre 0 et 1.")
+                                    print("erreur 2")
+                                    return JsonResponse({'status': 'error', 'message': "Le poids doit être compris entre 0 et 1.."}, status=400)
+                                else:
+                                   if not is_float_between_0_and_20(row['note2']):
+                                        fichier_is_valid = False
+                                        messages.error(request, "La note doit être un réel entre 0 et 20")
+                                        return JsonResponse({'status': 'error', 'message': "La note doit être un réel entre 0 et 20"}, status=400)
+                            else:
+                                fichier_is_valid = False
+
+                                messages.error(request, "Le poids de la note 2 n'est pas spécifié.")
+                                print("erreur 2")
+                                return JsonResponse({'status': 'error', 'message': "Le poids de la note 1 n'est pas spécifié."}, status=400)
+                    
+                if fichier_is_valid:
+
+                    for index, row in df.iterrows():
+                        matricule = row['matricule']
+                        try:
+                            etudiant = Etudiant.objects.get(matricule=matricule)
+                        except Etudiant.DoesNotExist:
+                            messages.error(request, f"L'étudiant avec le matricule {matricule} n'existe pas.")
+                            print("erreur 1")
+                            return JsonResponse({'status': 'error', 'message': f"L'étudiant avec le matricule {matricule} n'existe pas."}, status=404)
+            
+                        # Création des instances de Note pour chaque type de note
+                        if 'note1' in df.columns:
+                            try:
+                                note2 = Note.objects.get(etudiant=etudiant,matiere=matiere, type_note='note2',annee_scolaire=annee_scolaire)
+                                print("erreur test")
+                                poids2 = note2.poids
+
+                                if 'poids1' in df.columns:
+                                    poids1 = row['poids1']
+                                    if not is_float_between_0_and_1(poids1):
+
+                                        messages.error(request, "Le poids doit être un réel compris entre 0 et 1.")
+                                        print("erreur 2")
+                                        return JsonResponse({'status': 'error', 'message': "Le poids doit être compris entre 0 et 1.."}, status=400)
+                                    else:
+                                        if poids1 + poids2 != float(1):
+
+                                            messages.error(request, "La somme des poids des notes n'est pas égale à 1.")
+                                            print("erreur 2")
+                                            return JsonResponse({'status': 'error', 'message': "La somme des poids des notes n'est pas égale à 1."}, status=400)
+                                        else:
+                                            note1 = Note.objects.create(
+                                                etudiant=etudiant,
+                                                matiere=matiere,
+                                                classe=classe,
+                                                note=row['note1'],
+                                                type_note='note1',
+                                                poids = row['poids1'],
+                                                semestre=semestre,
+                                                annee_scolaire=annee_scolaire
+                                            )
+
+                                            moyenne = Moyenne.objects.filter(etudiant=etudiant, matiere=matiere, annee_scolaire=annee_scolaire).first()
+                                            moyenne.moyenne = (note1.note * note1.poids + note2.note * note2.poids) 
+                                            moyenne.save()
+                                else:
+                                   
+                                    messages.error(request, "Le poids de la note 1 n'est pas spécifié.")
+                                    print("erreur 2")
+                                    return JsonResponse({'status': 'error', 'message': "Le poids de la note 1 n'est pas spécifié."}, status=400)
+
+                            except Note.DoesNotExist:
+                                if 'poids1' in df.columns:
+                                    poids1 = row['poids1']
+                                    if not is_float_between_0_and_1(poids1):
+
+                                        messages.error(request, "Le poids doit être un réel compris entre 0 et 1.")
+                                        print("erreur 2")
+                                        return JsonResponse({'status': 'error', 'message': "Le poids doit être compris entre 0 et 1.."}, status=400)
+                                    else:
+                                        note1 = Note.objects.create(
+                                            etudiant=etudiant,
+                                            matiere=matiere,
+                                            classe=classe,
+                                            note=row['note1'],
+                                            type_note='note1',
+                                            poids = row['poids1'],
+                                            semestre=semestre,
+                                            annee_scolaire=annee_scolaire
+                                        )
+
+                                        moyenne = Moyenne.objects.create(etudiant=etudiant, matiere=matiere, annee_scolaire=annee_scolaire, classe=classe,moyenne=row['note1']*poids1)
+                                        
+                                else:
+
+                                    messages.error(request, "Le poids de la note 1 n'est pas spécifié.")
+                                    print("erreur 2")
+                                    return JsonResponse({'status': 'error', 'message': "Le poids de la note 1 n'est pas spécifié."}, status=400)
+
+                            
+
+                        if 'note2' in df.columns:
+                            try:
+                                note1 = Note.objects.get(etudiant=etudiant,matiere=matiere, type_note='note1',annee_scolaire=annee_scolaire)
+                                poids1 = note1.poids
+
+                                if 'poids2' in df.columns:
+                                    poids2 = row['poids2']
+                                    if not is_float_between_0_and_1(poids2):
+
+                                        messages.error(request, "Le poids doit être un réel compris entre 0 et 1.")
+                                        print("erreur 2")
+                                        return JsonResponse({'status': 'error', 'message': "Le poids doit être compris entre 0 et 1.."}, status=400)
+                                    else:
+                                        if poids1 + poids2 != float(1):
+
+                                            messages.error(request, "La somme des poids des notes n'est pas égale à 1.")
+                                            print("erreur 2")
+                                            return JsonResponse({'status': 'error', 'message': "La somme des poids des notes n'est pas égale à 1."}, status=400)
+                                        else:
+                                            note2 = Note.objects.create(
+                                                etudiant=etudiant,
+                                                matiere=matiere,
+                                                classe=classe,
+                                                note=row['note2'],
+                                                type_note='note2',
+                                                poids = row['poids2'],
+                                                semestre=semestre,
+                                                annee_scolaire=annee_scolaire
+                                            )
+
+                                            moyenne = Moyenne.objects.filter(etudiant=etudiant, matiere=matiere, annee_scolaire=annee_scolaire).first()
+                                            moyenne.moyenne = (note1.note * note1.poids + note2.note * note2.poids) 
+                                            moyenne.save()
+                                else:
+                                    messages.error(request, "Le poids de la note 1 n'est pas spécifié.")
+                                    print("erreur 2")
+                                    return JsonResponse({'status': 'error', 'message': "Le poids de la note 1 n'est pas spécifié."}, status=400)
+
+                            except Note.DoesNotExist:
+                                if 'poids2' in df.columns:
+                                    poids2 = row['poids2']
+                                    if not is_float_between_0_and_1(poids2):
+                                        
+                                        messages.error(request, "Le poids doit être un réel compris entre 0 et 1.")
+                                        print("erreur 2")
+                                        return JsonResponse({'status': 'error', 'message': "Le poids doit être compris entre 0 et 1.."}, status=400)
+                                    else:
+                                        note2 = Note.objects.create(
+                                            etudiant=etudiant,
+                                            matiere=matiere,
+                                            classe=classe,
+                                            note=row['note2'],
+                                            type_note='note2',
+                                            poids = row['poids2'],
+                                            semestre=semestre,
+                                            annee_scolaire=annee_scolaire
+                                        )
+                                        moyenne = Moyenne.objects.create(etudiant=etudiant, matiere=matiere, annee_scolaire=annee_scolaire, classe=classe,moyenne=row['note2']*poids2)
+                                        
+                                else:
+                                    messages.error(request, "Le poids de la note 2 n'est pas spécifié.")
+                                    print("erreur 2")
+                                    return JsonResponse({'status': 'error', 'message': "Le poids de la note 1 n'est pas spécifié."}, status=400)
+
+                    request.session['last_activity'] = {'name': 'ajouter_notes', 'time': timezone.now().isoformat()}
+                    messages.success(request, "Les notes ont été importées avec succès.")
+                    return JsonResponse({'status': 'success'})
+                else:
+                   messages.error(request, f"Le fichier comporte une erreur: {str(e)}")
+                   return JsonResponse({'Erreur lors du traitement': str(e)}, status=500)
                     
             except Exception as e:
                 messages.error(request, f"Erreur lors du traitement du fichier: {str(e)}")
@@ -85,7 +384,8 @@ def ajouter_notes(request):
 def charger_notes(request):
     classes = Classe.objects.all()
     matieres = Matiere.objects.all()
-    return render(request, 'charger_notes.html', {'classes': classes, 'matieres': matieres})
+    theme = request.session['theme'] if 'theme' in request.session else ''
+    return render(request, 'charger_notes.html', {'classes': classes, 'matieres': matieres,'theme':theme})
 
 def filtrer_matieres(request):
     """
@@ -111,6 +411,7 @@ def filtrer_matieres(request):
 
 def ajouter_matiere(request):
     """Ajoute une matière dans la base de données"""
+    theme = request.session['theme'] if 'theme' in request.session else ''
     if request.method == 'POST':
         responsable = Responsable.objects.get(pk=request.session['user_pk'])
         filiere_responsable = responsable.filiere
@@ -119,12 +420,12 @@ def ajouter_matiere(request):
             form.save()
             request.session['last_activity'] = {'name': 'ajouter_matiere', 'time': timezone.now().isoformat()}
             messages.success(request, 'Matière ajoutée avec succès')
-            return render(request, 'ajouter_matieres.html', {'form': MatiereForm()})
+            return render(request, 'ajouter_matieres.html', {'form': MatiereForm(),'theme':theme})
     else:
         responsable = Responsable.objects.get(pk=request.session['user_pk'])
         filiere_responsable = responsable.filiere
         form = MatiereForm(filiere_responsable=filiere_responsable)
-    return render(request, 'ajouter_matieres.html', {'form': form})
+    return render(request, 'ajouter_matieres.html', {'form': form,'theme':theme})
 
 def ajouter_matieres(request):
     """Ajoute des matieres reçues à partir d'un fichier excel"""
@@ -143,7 +444,7 @@ def ajouter_matieres(request):
                     credit = row['credit']
                     Matiere.objects.create(name=name, semestre=semestre, classe=classe, credit=credit)
                 request.session['last_activity'] = {'name': 'ajouter_matieres', 'time': timezone.now().isoformat()}
-                messages.success(request, "Les matières ont été importées avec succès.")
+                messages.success(request, "Les matières ont été ajoutées avec succès.")
                 return JsonResponse({'status': 'success'})
             except Exception as e:
                 messages.error(request, f"Erreur lors du traitement du fichier: {str(e)}")
@@ -156,18 +457,15 @@ def ajouter_matieres(request):
 def charger_matieres(request):
     """Renvoie sur une page html où sera fourni un fichier excel contenant 
     une liste des matières à ajouter dans la base"""
+    theme = request.session['theme'] if 'theme' in request.session else ''
     try: 
         responsable = Responsable.objects.get(pk=request.session['user_pk'])
-        if responsable.filiere == 'AS':
-            classes = ['AS1','AS2','AS3']
-        elif responsable.filiere == 'ISEP':
-            classes = ['ISEP1','ISEP2']
-        elif responsable.filiere == 'ISE':
-            classes = ['ISEP3','ISE1-eco','ISE1-maths','ISE2','ISE3']
+        classes = responsable.get_classes_by_filiere()
     except Responsable.DoesNotExist:
         classes = Classe.objects.none()
         messages.error(request, "Vous n'êtes pas autorisé à accéder à cette page.")
-    return render(request, 'charger_matieres.html', {'classes': classes})
+    
+    return render(request, 'charger_matieres.html', {'classes': classes,'theme':theme})
 
 """
    
@@ -223,18 +521,22 @@ def notes_etudiants(request):
     for matiere in matieres_semestre1:
         note1 = notes_etudiant_annee.filter(matiere=matiere, semestre='semestre1', type_note='note1').first()
         note2 = notes_etudiant_annee.filter(matiere=matiere, semestre='semestre1', type_note='note2').first()
+        moyenne = Moyenne.objects.filter(etudiant=etudiant, matiere=matiere, annee_scolaire=selected_year).first()
         notes_par_semestre1[matiere] = [
             note1.note if note1 else '/', 
-            note2.note if note2 else '/'
+            note2.note if note2 else '/',
+            moyenne.moyenne if moyenne else '/'
         ]
 
     #  On remplit les notes pour les matieres du semestre 2
     for matiere in matieres_semestre2:
         note1 = notes_etudiant_annee.filter(matiere=matiere, semestre='semestre2', type_note='note1').first()
         note2 = notes_etudiant_annee.filter(matiere=matiere, semestre='semestre2', type_note='note2').first()
+        moyenne = Moyenne.objects.filter(etudiant=etudiant, matiere=matiere, annee_scolaire=selected_year).first()
         notes_par_semestre2[matiere] = [
             note1.note if note1 else '/', 
-            note2.note if note2 else '/'
+            note2.note if note2 else '/',
+            moyenne.moyenne if moyenne else '/'
         ]
 
     return render(request, 'note_etudiant.html', {
@@ -252,13 +554,15 @@ def notes_etudiants(request):
 def ajouter_responsable(request):
     if request.method == 'POST':
         form = ResponsableForm(request.POST)
+        theme = request.session['theme'] if 'theme' in request.session else ''
         if form.is_valid():
             form.save()
             messages.success(request, 'Responsable ajouté avec succès')
-            return render(request, 'ajouter_responsable.html', {'form': ResponsableForm()})
+            return render(request, 'ajouter_responsable.html', {'form': ResponsableForm(),'theme':theme})
     else:
         form = ResponsableForm()
-    return render(request, 'ajouter_responsable.html', {'form': form})
+        theme = request.session['theme'] if 'theme' in request.session else ''
+    return render(request, 'ajouter_responsable.html', {'form': form,'theme':theme})
 
 @is_login
 def liste_etudiants(request):
@@ -268,12 +572,7 @@ def liste_etudiants(request):
         # On filtre les classes qui correspondent au responsable connecté
         try: 
             responsable = Responsable.objects.get(pk=request.session['user_pk'])
-            if responsable.filiere == 'AS':
-                classes = ['AS1','AS2','AS3']
-            elif responsable.filiere == 'ISEP':
-                classes = ['ISEP1','ISEP2']
-            elif responsable.filiere == 'ISE':
-                classes = ['ISEP3','ISE1-eco','ISE1-maths','ISE2','ISE3']
+            classes = responsable.get_classes_by_filiere()
         except Responsable.DoesNotExist:
             classes = Classe.objects.none()
             messages.error(request, "Vous n'êtes pas autorisé à accéder à cette page.")
@@ -297,25 +596,48 @@ def liste_etudiants(request):
         cycle1 = ['AS1','AS2','ISEP1','ISEP2','ISEP3','ISE1-eco','ISE1-maths','ISE2']
         responsable = Responsable.objects.get(pk=request.session['user_pk'])
 
+        type = "" # Pour un affichage personnalisé niveau front-end
+
         if not (annee or statut or classe ):
             etudiants = responsable.get_etudiants_by_filiere()
-            
+ 
         elif annee and statut and classe:
-            note_filter=Note.objects.filter(annee_scolaire=annee,classe__name=classe)
-            etudiant_filter=[note.etudiant for note in note_filter]
-            etudiant_filter=list(set(etudiant_filter))
-            etudiants_resp = responsable.get_etudiants_by_filiere()
-            etudiants_p=[]
-            for etudiant in etudiant_filter:
-                if etudiant.statut==statut:
-                    etudiants_p.append(etudiant)
+            if statut == "En cours de formation":
+                note_filter=Note.objects.filter(annee_scolaire=annee,classe__name=classe)
+                etudiant_filter=[note.etudiant for note in note_filter]
+                
+                # On retire les doublons
+                etudiant_filter=list(set(etudiant_filter))
+                etudiants_resp = responsable.get_etudiants_by_filiere()
+                
+                # Liste finale
+                etudiants_p=[]
+                for etudiant in etudiant_filter:
+                    if etudiant.statut==statut:
+                        etudiants_p.append(etudiant)
 
-            for classe_responsable, eleves in etudiants_resp.items():
-                if classe_responsable==classe:
-                    etudiants={classe: etudiants_p}
-                    break
+                for classe_responsable, eleves in etudiants_resp.items():
+                    if classe_responsable==classe:
+                        etudiants={classe: etudiants_p}
+                        break
 
-            
+            elif statut == "Diplômé":
+                etudiants_p = Etudiant.objects.filter(annee_diplomation=annee,classe__name=classe)
+                etudiants_resp = responsable.get_etudiants_by_filiere()
+                type="de diplomation"
+                for classe_responsable, eleves in etudiants_resp.items():
+                    if classe_responsable==classe:
+                        etudiants={classe: etudiants_p}
+                        break
+            elif statut == "Exclus":
+                etudiants_p = Etudiant.objects.filter(annee_exclusion=annee,classe__name=classe)
+                etudiants_resp = responsable.get_etudiants_by_filiere()
+                type = "d' exclusion"
+                for classe_responsable, eleves in etudiants_resp.items():
+                    if classe_responsable==classe:
+                        etudiants={classe: etudiants_p}
+                        break
+
         elif annee and classe:
             note_filter=Note.objects.filter(annee_scolaire=annee,classe__name=classe)
             etudiant_filter=[note.etudiant for note in note_filter]
@@ -327,23 +649,51 @@ def liste_etudiants(request):
                     break
 
         elif annee and statut:
-            note_filter=Note.objects.filter(annee_scolaire=annee)
-            etudiant_filter=[note.etudiant for note in note_filter]
-            etudiant_filter=list(set(etudiant_filter))
-            etudiants_resp = responsable.get_etudiants_by_filiere()
-            etudiants_p=[]
-            for etudiant in etudiant_filter:
-                if etudiant.statut==statut:
-                    etudiants_p.append(etudiant)
+            if statut=="En cours de formation":
 
-            for classe_responsable, eleves in etudiants_resp.items():
-                liste_etudiants=[]
-                for etudiant in etudiants_p:
-                    if classe_responsable==etudiant.classe.name:
-                        liste_etudiants.append(etudiant)
-                etudiants_resp[classe_responsable]=liste_etudiants
+                note_filter=Note.objects.filter(annee_scolaire=annee)
+                etudiant_filter=[note.etudiant for note in note_filter]
+                etudiant_filter=list(set(etudiant_filter))
+                etudiants_resp = responsable.get_etudiants_by_filiere()
+                etudiants_p=[]
+                for etudiant in etudiant_filter:
+                    if etudiant.statut==statut:
+                        etudiants_p.append(etudiant)
 
-            etudiants=etudiants_resp
+                for classe_responsable, eleves in etudiants_resp.items():
+                    liste_etudiants=[]
+                    for etudiant in etudiants_p:
+                        if classe_responsable==etudiant.classe.name:
+                            liste_etudiants.append(etudiant)
+                    etudiants_resp[classe_responsable]=liste_etudiants
+
+                etudiants=etudiants_resp
+            elif statut == "Diplômé":
+                etudiants_p = Etudiant.objects.filter(annee_diplomation=annee)
+                etudiants_resp = responsable.get_etudiants_by_filiere()
+                for classe_responsable, eleves in etudiants_resp.items():
+                    liste_etudiants=[]
+                    for etudiant in etudiants_p:
+                        if classe_responsable==etudiant.classe.name:
+                            liste_etudiants.append(etudiant)
+                    etudiants_resp[classe_responsable]=liste_etudiants
+                
+                type = "de diplomation"
+
+                etudiants=etudiants_resp
+            elif statut == "Exclus":
+                etudiants_p = Etudiant.objects.filter(annee_exclusion=annee,classe__name=classe)
+                etudiants_resp = responsable.get_etudiants_by_filiere()
+                for classe_responsable, eleves in etudiants_resp.items():
+                    liste_etudiants=[]
+                    for etudiant in etudiants_p:
+                        if classe_responsable==etudiant.classe.name:
+                            liste_etudiants.append(etudiant)
+                    etudiants_resp[classe_responsable]=liste_etudiants
+
+                etudiants=etudiants_resp
+
+                type = "d' exclusion"
 
         elif statut and classe:
             etudiants_resp = responsable.get_etudiants_by_filiere()
@@ -357,6 +707,11 @@ def liste_etudiants(request):
                     break
 
             etudiants=etudiants_resp
+
+            if statut == "Diplômé":
+                type = "de diplomation"
+            elif statut == "Exclus":
+                type = "d' exclusion"
         
 
         elif annee:
@@ -386,20 +741,19 @@ def liste_etudiants(request):
 
             etudiants=etudiants_resp
             
-    return render(request, 'liste_etudiants.html', {'etudiants': etudiants,'theme':theme,'cycle1':cycle1,'statuts':statuts,'classes':classes,'annees':annees,'selected_annee':selected_annee,'selected_classe':selected_classe,'selected_statut':selected_statut})
+            if statut == "Diplômé":
+                type = "de diplomation"
+            elif statut == "Exclus":
+                type = "d' exclusion"
+            
+    return render(request, 'liste_etudiants.html', {'etudiants': etudiants,'theme':theme,'cycle1':cycle1,'statuts':statuts,'classes':classes,'annees':annees,'selected_annee':selected_annee,'selected_classe':selected_classe,'selected_statut':selected_statut,'type':type})
 
 
 @is_login
 def Accueil_responsable(request):
     theme = request.session['theme'] if 'theme' in request.session else ''
     responsable = Responsable.objects.get(id = request.session['user_pk'])
-    classes = []
-    if responsable.filiere == 'AS':
-        classes=['AS1','AS2','AS3']
-    elif responsable.filiere == 'ISEP':
-        classes = ['ISEP1','ISEP2']
-    elif responsable.filiere == 'ISE':
-        classes = ['ISEP3','ISE1-eco','ISE1-maths','ISE2','ISE3']
+    classes = responsable.get_classes_by_filiere()
 
     last_login = responsable.last_login
     last_activity = request.session.get('last_activity')
@@ -433,12 +787,7 @@ def charger_etudiants(request):
     une liste d'étudiants à ajouter dans la base"""
     try: 
         responsable = Responsable.objects.get(pk=request.session['user_pk'])
-        if responsable.filiere == 'AS':
-            classes = ['AS1','AS2','AS3']
-        elif responsable.filiere == 'ISEP':
-            classes = ['ISEP1','ISEP2']
-        elif responsable.filiere == 'ISE':
-            classes = ['ISEP3','ISE1-eco','ISE1-maths','ISE2','ISE3']
+        classes = responsable.get_classes_by_filiere()
     except Responsable.DoesNotExist:
         classes = Classe.objects.none()
         messages.error(request, "Vous n'êtes pas autorisé à accéder à cette page.")
@@ -474,16 +823,22 @@ def ajouter_etudiants(request):
                             name=row['nom'],
                             classe=classe,
                             email=row['email'],
-                            password=row['password'],
+                            password=make_password(row['matricule']),
+                            sexe = row['sexe'],
+                            nationalite = row['nationalite'],
+                            date_naissance = row['date_naissance'],
                             annee_inscription=annee_inscription
                         )
                 request.session['last_activity'] = {'name':'ajouter_etudiants','time':timezone.now().isoformat()}
+                print('erreur à ce niveau0')
                 messages.success(request, "Les étudiants ont été ajoutés avec succès.")
                 return JsonResponse({'status': 'success'})
             except Exception as e:
+                print('erreur à ce niveau')
                 messages.error(request, f"Erreur lors du traitement du fichier: {str(e)}")
                 return JsonResponse({'Erreur lors du traitement': str(e)}, status=500)
         except Exception as e:
+            print('erreur à ce niveau2')
             messages.error(request, f"Désolé, une erreur est survenue: {str(e)}")
             return JsonResponse({'error': 'Méthode non autorisée'}, status=405)
     
@@ -511,12 +866,8 @@ def modifier_matiere(request):
             try: 
                 responsable = Responsable.objects.get(pk=request.session['user_pk'])
                 # On filtre les classes pour le select du formulaire html
-                if responsable.filiere == 'AS':
-                    classes = ['AS1','AS2','AS3']
-                elif responsable.filiere == 'ISEP':
-                    classes = ['ISEP1','ISEP2']
-                elif responsable.filiere == 'ISE':
-                    classes = ['ISEP3','ISE1-eco','ISE1-maths','ISE2','ISE3']
+                classes = responsable.get_classes_by_filiere()
+               
                 
                 semestres = [{'value':'semestre1','name':'Semestre 1'},
                             {'value':'semestre2','name':'Semestre 2'}]
@@ -531,12 +882,7 @@ def modifier_matiere(request):
     elif request.method == 'GET':
         try: 
             responsable = Responsable.objects.get(pk=request.session['user_pk'])
-            if responsable.filiere == 'AS':
-                classes = ['AS1','AS2','AS3']
-            elif responsable.filiere == 'ISEP':
-                classes = ['ISEP1','ISEP2']
-            elif responsable.filiere == 'ISE':
-                classes = ['ISEP3','ISE1-eco','ISE1-maths','ISE2','ISE3']
+            classes = responsable.get_classes_by_filiere()
             
             semestres = [{'value':'semestre1','name':'Semestre 1'},
                         {'value':'semestre2','name':'Semestre 2'}]
@@ -636,18 +982,22 @@ def detail_etudiant(request, matricule):
     for matiere in matieres_semestre1:
         note1 = notes_etudiant_annee.filter(matiere=matiere, semestre='semestre1', type_note='note1').first()
         note2 = notes_etudiant_annee.filter(matiere=matiere, semestre='semestre1', type_note='note2').first()
+        moyenne = Moyenne.objects.filter(etudiant=etudiant, matiere=matiere, annee_scolaire=selected_year).first()
         notes_par_semestre1[matiere] = [
             note1.note if note1 else '/', 
-            note2.note if note2 else '/'
+            note2.note if note2 else '/',
+            moyenne.moyenne if moyenne else '/'
         ]
 
     #  On remplit les notes pour les matieres du semestre 2
     for matiere in matieres_semestre2:
         note1 = notes_etudiant_annee.filter(matiere=matiere, semestre='semestre2', type_note='note1').first()
         note2 = notes_etudiant_annee.filter(matiere=matiere, semestre='semestre2', type_note='note2').first()
+        moyenne = Moyenne.objects.filter(etudiant=etudiant, matiere=matiere, annee_scolaire=selected_year).first()
         notes_par_semestre2[matiere] = [
             note1.note if note1 else '/', 
-            note2.note if note2 else '/'
+            note2.note if note2 else '/',
+            moyenne.moyenne if moyenne else '/'
         ]
 
     return render(request, 'detail_etudiant.html', {
@@ -873,12 +1223,7 @@ def new_message(request):
                 etudiants = Etudiant.objects.none()
                 selected_class = None
             responsable = Responsable.objects.get(pk=request.session['user_pk'])
-            if responsable.filiere == 'AS':
-                classes = ['AS1','AS2','AS3']
-            elif responsable.filiere == 'ISEP':
-                classes = ['ISEP1','ISEP2']
-            elif responsable.filiere == 'ISE':
-                classes = ['ISEP3','ISE1-eco','ISE1-maths','ISE2','ISE3']
+            classes = responsable.get_classes_by_filiere()
 
             classes = Classe.objects.filter(name__in=classes)    
             return render(request, 'new_message.html', {'classes': classes,'etudiants':etudiants,'selected_class':selected_class,'theme':theme})
@@ -947,6 +1292,19 @@ def Upgrade_classe(request):
             except Classe.DoesNotExist:
                 messages.error(request, "Aucune classe avec ce nom dans la base.")
                 return redirect('liste_etudiants')
+            
+def Degrade_etudiant(request,matricule):
+    """
+        Cette fonction permet de mettre à jour un étudiant spécifique
+    """
+    try:
+        etudiant = Etudiant.objects.get(pk=matricule) 
+        etudiant.Degrade_etudiant
+        messages.success(request,f"Etudiant {etudiant.name} reprend la classe {etudiant.classe.name}") 
+        return redirect('liste_etudiants')
+    except Etudiant.DoesNotExist:
+        messages.error(request, "Aucun étudiant avec cet identifiant dans la base.")
+        return redirect('liste_etudiants')
                         
 
 @is_login
@@ -956,12 +1314,7 @@ def Responsable_notes(request):
     if request.method == 'GET':
         try: 
             responsable = Responsable.objects.get(pk=request.session['user_pk'])
-            if responsable.filiere == 'AS':
-                classes = ['AS1','AS2','AS3']
-            elif responsable.filiere == 'ISEP':
-                classes = ['ISEP1','ISEP2']
-            elif responsable.filiere == 'ISE':
-                classes = ['ISEP3','ISE1-eco','ISE1-maths','ISE2','ISE3']
+            classes = responsable.get_classes_by_filiere()
         except Responsable.DoesNotExist:
             classes = Classe.objects.none()
             messages.error(request, "Vous n'êtes pas autorisé à accéder à cette page.")
@@ -970,6 +1323,8 @@ def Responsable_notes(request):
         class_name = request.GET.get('classe_name', None)
         # On recupere le matricule de l'etudiant envoyé depuis la methode get (si disponible)
         etudiant_id = request.GET.get('etudiant_id', None)
+
+        theme = request.session['theme'] if 'theme' in request.session else ''
         
 
         if etudiant_id:
@@ -1009,18 +1364,22 @@ def Responsable_notes(request):
             for matiere in matieres_semestre1:
                 note1 = notes_etudiant_annee.filter(matiere=matiere, semestre='semestre1', type_note='note1').first()
                 note2 = notes_etudiant_annee.filter(matiere=matiere, semestre='semestre1', type_note='note2').first()
+                moyenne = Moyenne.objects.filter(etudiant=etudiant, matiere=matiere, annee_scolaire=selected_year).first()
                 notes_par_semestre1[matiere] = [
                     note1.note if note1 else '/', 
-                    note2.note if note2 else '/'
+                    note2.note if note2 else '/',
+                    moyenne.moyenne if moyenne else '/'
                 ]
 
             #  On remplit les notes pour les matieres du semestre 2
             for matiere in matieres_semestre2:
                 note1 = notes_etudiant_annee.filter(matiere=matiere, semestre='semestre2', type_note='note1').first()
                 note2 = notes_etudiant_annee.filter(matiere=matiere, semestre='semestre2', type_note='note2').first()
+                moyenne = Moyenne.objects.filter(etudiant=etudiant, matiere=matiere, annee_scolaire=selected_year).first()
                 notes_par_semestre2[matiere] = [
                     note1.note if note1 else '/', 
-                    note2.note if note2 else '/'
+                    note2.note if note2 else '/',
+                    moyenne.moyenne if moyenne else '/'
                 ]
 
             return render(request, 'notes.html', {
@@ -1032,15 +1391,175 @@ def Responsable_notes(request):
                 'classe_annee': class_annee,
                 'classes': classes,
                 'selected_classe': selected_classe,
-                'etudiants': etudiants
+                'etudiants': etudiants,
+                'theme': theme
             })
         
         elif class_name:
             # On recupere la classe correspondante ainsi que les etudiants de la classe
             classe = Classe.objects.get(name=class_name)
             etudiants = Etudiant.objects.filter(classe=classe, statut='En cours de formation')
-            return render(request, 'notes.html', {'etudiants': etudiants, 'classes': classes,'selected_classe':classe.name})
+            return render(request, 'notes.html', {'etudiants': etudiants, 'classes': classes,'selected_classe':classe.name,'theme':theme})
         else:
             # On retourne uniquement les classes correspondantes au responsable si ni une classe, ni un étudiant n'est selectionné
-            return render(request, 'notes.html', {'classes': classes})
+            return render(request, 'notes.html', {'classes': classes,'theme':theme})
 
+
+
+def modifier_et_telecharger_excel(request):
+
+    if request.method == 'GET':
+        # Récupérer les données de la requête 
+        annee_scolaire = request.GET.get('annee_scolaire')
+        classe_name = request.GET.get('classe')
+
+        # Vérifier si les données sont présentes
+        if annee_scolaire and classe_name:
+            
+            try:
+                classe = Classe.objects.get(name=classe_name)
+            except Classe.DoesNotExist:
+                classe = None
+
+            
+            def collecter_donnees_semestre(semester):
+                """Cette fonction va permettre de collecter les notes relatives a un semestre données
+                pour la classe et l'année considérée"""
+        
+                # Récupérer les notes de l'étudiant pour l'année scolaire et la classe spécifiées
+                notes = Note.objects.filter( annee_scolaire=annee_scolaire, classe=classe, semestre =semester).order_by('matiere_id')
+                
+                notes1= [note for note in notes if note.type_note == 'note1']
+            
+                notes2 = [note for note in notes if note.type_note == 'note2']
+            
+                # On recupere les matieres correpondantes
+                matieres1 = [note.matiere for note in notes]
+                
+                # On supprime les doublons
+                matieres = []
+                for matiere in matieres1:
+                    if matiere not in matieres:
+                        matieres.append(matiere)
+                
+                
+                etudiants1=[note.etudiant for note in notes]
+            
+                etudiants=[]
+
+                for etudiant in etudiants1:
+                    if etudiant not in etudiants:
+                        etudiants.append(etudiant)
+
+
+                # Récupérer les moyennes des etudiants pour l'année scolaire et la classe spécifiées
+                moyennes1 = [matiere.moyennes.all() for matiere in matieres]
+            
+                moyennes = []
+                for listemoyenne in moyennes1:
+                    for moyenne in listemoyenne:
+                        if moyenne not in moyennes:
+                            moyennes.append(moyenne)
+
+            
+                # C'est dans ce dictionnaire que seront stockées toutes les informations a remplir dans le fichier excel
+                grand_dict = dict()
+
+                for etudiant in etudiants:
+                    grand_dict[etudiant] = dict()
+                    for matiere in matieres:
+                        grand_dict[etudiant][matiere] = {
+                            'note1': None,
+                            'note2': None,
+                            'moyenne': None,
+                        }
+                        for note in notes1:
+                            if note.etudiant == etudiant and note.matiere == matiere:
+                                grand_dict[etudiant][matiere]['note1'] = note.note
+                        for note in notes2:
+                            if note.etudiant == etudiant and note.matiere == matiere:
+                                grand_dict[etudiant][matiere]['note2'] = note.note
+                        moyenne = matiere.moyennes.filter(etudiant=etudiant).first()
+                        if moyenne:
+                            grand_dict[etudiant][matiere]['moyenne'] = moyenne.moyenne
+                    
+                return {'grand_dict':grand_dict,'matieres':matieres}
+
+
+
+            # Chemin vers le fichier Excel existant
+            chemin_fichier = 'modeles/modele_ise3_eval.xlsx'
+            
+            # Ouvrir le fichier Excel
+            wb = openpyxl.load_workbook(chemin_fichier)
+
+            def remplir_feuille_semestre(semester,grand_dict,matieres):
+                """Cette fonction permet de remplir le fichier excel a partir des informations collectées au prealable"""
+
+                ws = wb[semester]  # Sélectionner la feuille active (ou spécifiez une feuille spécifique avec `wb['Nom de la feuille']`)
+
+                ligne = 5
+
+                for etudiant, data in grand_dict.items():
+                    ws.cell(row=ligne, column=1, value=etudiant.pk)
+                    ws.cell(row=ligne, column=2, value=etudiant.name)
+                    ws.cell(row=ligne, column=3, value=etudiant.sexe)
+                    ws.cell(row=ligne, column=4, value=etudiant.date_naissance)
+                    ws.cell(row=ligne, column=5, value=etudiant.nationalite)
+                    ws.cell(row=ligne, column=6, value=etudiant.annee_inscription)
+                    ws.cell(row=ligne, column=7, value=etudiant.email)
+                    ws.cell(row=ligne, column=8, value=etudiant.heure_absence)
+                    
+                    # Remplir les notes pour chaque matière
+                    col_base = 9  # Début des colonnes pour les matières
+                    for matiere in matieres:
+                        ws.cell(row=ligne, column=col_base, value=data[matiere]['note1'])
+                        ws.cell(row=ligne, column=col_base + 1, value=data[matiere]['note2'])
+                        ws.cell(row=ligne, column=col_base + 2, value=data[matiere]['moyenne'])
+                        col_base += 3  # Passer aux colonnes suivantes pour la prochaine matière
+
+                    ligne += 1
+
+            # On recupere les informations du semestre1
+            grand_dict1 = collecter_donnees_semestre('semestre1')['grand_dict']
+            matieres1 = collecter_donnees_semestre('semestre1')['matieres']
+
+            # On recupere les informations du semestre 2
+            grand_dict2 = collecter_donnees_semestre('semestre2')['grand_dict']
+            matieres2 = collecter_donnees_semestre('semestre2')['matieres']
+            
+            # On remplit le fichier pour les smestres 1 et 2
+            remplir_feuille_semestre('semestre1',grand_dict1,matieres1)
+            remplir_feuille_semestre('semestre2',grand_dict2,matieres2)
+
+            # Enregistrer les modifications dans un fichier temporaire
+            #fichier_temp = 'modeles/fichier_temp.xlsx'
+            #wb.save(fichier_temp)
+
+            fichier_temp = io.BytesIO()
+            wb.save(fichier_temp)
+            fichier_temp.seek(0)
+
+            # Créer une réponse HTTP pour le téléchargement
+            nom_fichier = f"recapitulatif_{annee_scolaire}_{classe.name}_.xlsx"
+
+            # Préparez la réponse HTTP
+            response = HttpResponse(
+                fichier_temp,
+                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+            response['Content-Disposition'] = f'attachment; filename={nom_fichier}'
+            
+            #with open(fichier_temp, 'rb') as f:
+                #response = HttpResponse(f.read(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+                #response['Content-Disposition'] = f'attachment; filename={nom_fichier}'
+
+            # Supprimer le fichier temporaire après le téléchargement
+            #os.remove(fichier_temp)
+
+            return response
+        else:
+            # Gérer le cas où les données sont manquantes
+            return HttpResponse("Les données sont manquantes.", status=400)
+
+    

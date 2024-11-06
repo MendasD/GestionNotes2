@@ -80,6 +80,7 @@
             <th>Crédit</th>
             <th>Note 1</th>
             <th>Note 2</th>
+            <th>Moyenne</th>
         </tr>
     </thead>
     <tbody>
@@ -89,10 +90,11 @@
                 <td>{{ matiere.credit }}</td>
                 <td>{{ notes.0 }}</td>
                 <td>{{ notes.1 }}</td>
+                <td>{{ notes.2 }}</td>
             </tr>
         {% empty %}
             <tr>
-                <td colspan="4">Aucune matière disponible</td>
+                <td colspan="5">Aucune matière disponible</td>
             </tr>
         {% endfor %}
     </tbody>
@@ -106,6 +108,7 @@
             <th>Crédit</th>
             <th>Note 1</th>
             <th>Note 2</th>
+            <th>Moyenne</th>
         </tr>
     </thead>
     <tbody>
@@ -115,10 +118,11 @@
                 <td>{{ matiere.credit }}</td>
                 <td>{{ notes.0 }}</td>
                 <td>{{ notes.1 }}</td>
+                <td>{{ notes.2 }}</td>
             </tr>
         {% empty %}
             <tr>
-                <td colspan="4">Aucune matière disponible</td>
+                <td colspan="5">Aucune matière disponible</td>
             </tr>
         {% endfor %}
     </tbody>
@@ -131,6 +135,6 @@
 <!-- Inclure la bibliothèque excelJS pour générer des fichiers Excel avec mise en forme des cellules-->
 <script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
 
-<script src="{% static 'javascript/etudiant_telecharger_notes.js' %}"></script>
+<script src="{% static 'javascript/etudiant_telecharger_notes2.js' %}"></script>
 
 {% endblock content %}

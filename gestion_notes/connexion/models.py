@@ -11,6 +11,9 @@ class Etudiant(models.Model):
     password = models.CharField(max_length=100)
     classe = models.ForeignKey('Classe', on_delete=models.CASCADE, related_name='etudiants')
     annee_inscription = models.CharField(max_length=4)
+    nationalite = models.CharField(max_length=100, blank=True, null=True)
+    sexe = models.CharField(max_length=1, blank=True, null=True)
+    date_naissance = models.DateField(blank=True, null=True)
     annee_scolaire_en_cours = models.CharField(max_length=9, blank=True)
     statut = models.CharField(
         max_length=100, 
@@ -24,6 +27,14 @@ class Etudiant(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     last_login = models.DateTimeField(null=True, blank=True)
+    annee_exclusion = models.CharField(max_length=9, null=True, blank=True)
+    annee_diplomation = models.CharField(max_length=9, null=True, blank=True)
+    nombre_redoublage = models.IntegerField(default=0)
+    heure_absence = models.IntegerField(default=0)
+    
+
+    def get_notes(self):
+        return self.notes.all()
 
     def set_password(self, raw_password):
         self.password = make_password(raw_password)
@@ -68,6 +79,18 @@ class Etudiant(models.Model):
         self.save()
     
     @property
+    def Degrade_etudiant(self):
+        """Pour faire redoubler un etudiant"""
+        self.add_year()
+        self.nombre_redoublage+=1
+        if self.nombre_redoublage==2:
+            self.statut='Exclus'
+            self.annee_exclusion=self.annee_scolaire_en_cours
+            
+        self.save()
+
+
+    @property
     def Upgrade_etudiant(self):
         AS = ['AS1','AS2','AS3']
         ISEP = ['ISEP1','ISEP2','ISEP3','ISE2']
@@ -77,7 +100,7 @@ class Etudiant(models.Model):
         if classe_etudiant in AS:
             i=0
             for classe_value in AS:
-                if classe_etudiant == classe_value:
+                if classe_etudiant in classe_value:
                     try:
                         classe_new_name=AS[i+1]
                         classe_new= Classe.objects.get(name =classe_new_name)
@@ -108,6 +131,7 @@ class Etudiant(models.Model):
                     except IndexError:
                         self.classe=self.classe
                         self.statut= 'Diplômé'
+                        self.annee_diplomation = self.annee_scolaire_en_cours
                         self.save()
                         Diplome.objects.create(etudiant=self)
                         break
@@ -128,6 +152,7 @@ class Etudiant(models.Model):
                     except IndexError:
                         self.classe=self.classe
                         self.statut= 'Diplômé'
+                        self.annee_diplomation = self.annee_scolaire_en_cours
                         self.save()
                         Diplome.objects.create(etudiant=self)
                         break
@@ -159,7 +184,7 @@ class Classe(models.Model):
     
 class Matiere(models.Model):
     id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=500)
     classe = models.ForeignKey(Classe, on_delete=models.CASCADE, related_name='matieres')
     credit = models.FloatField()
     active = models.BooleanField(default=True)
@@ -185,6 +210,7 @@ class Note(models.Model):
     matiere = models.ForeignKey(Matiere, on_delete=models.CASCADE, related_name='notes')
     classe = models.ForeignKey(Classe, on_delete=models.CASCADE, related_name='notes', default=1)
     note = models.FloatField()
+    poids = models.FloatField(default=0.5,max_length=3)
     type_note = models.CharField(
         max_length=20,
         choices=[
@@ -203,8 +229,19 @@ class Note(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     annee_scolaire = models.CharField(max_length=9, default='1999-2000')
 
+   
+
+   
+
     def __str__(self):
         return f"{self.etudiant.name} - {self.matiere.name} - {self.note} ({self.annee_scolaire})"
+    
+class Moyenne(models.Model):
+    etudiant = models.ForeignKey(Etudiant, on_delete=models.CASCADE, related_name='moyennes')
+    matiere = models.ForeignKey(Matiere, on_delete=models.CASCADE, related_name='moyennes')
+    classe = models.ForeignKey(Classe, on_delete=models.CASCADE, related_name='moyennes')
+    annee_scolaire = models.CharField(max_length=9, default='1999-2000')
+    moyenne = models.FloatField()
     
 class Responsable(models.Model):
     id = models.AutoField(primary_key=True)
@@ -216,7 +253,8 @@ class Responsable(models.Model):
         choices=[
             ('AS', 'Analyste Statisticien'),
             ('ISEP', 'Ingénieur Statisticien Economiste Préparatoire'),
-            ('ISE', 'Ingénieur Statisticien Economiste')
+            ('ISE1', 'Ingénieur Statisticien Economiste première année'),
+            ('ISE', 'Ingénieur Statisticien Economiste ')
         ]
     )
     created_at = models.DateTimeField(auto_now_add=True)
@@ -234,6 +272,18 @@ class Responsable(models.Model):
         from django.contrib.auth.hashers import check_password
         return check_password(raw_password, self.password)
 
+    def get_classes_by_filiere(self):
+        filiere = self.filiere
+        if filiere == 'AS':
+            classes = ['AS1','AS2','AS3-data_science','AS3-eco']
+        elif filiere == 'ISEP':
+            classes = ['ISEP1','ISEP2']
+        elif filiere == 'ISE1':
+            classes = ['ISEP3','ISE1-eco','ISE1-maths']
+        elif filiere == 'ISE':
+            classes = ['ISE2','ISE3-eco','ISE3-evaluation_impact']
+        return classes
+
     def get_etudiants_by_filiere(self):
         filiere = self.filiere
         if filiere == 'AS':
@@ -249,14 +299,18 @@ class Responsable(models.Model):
             etudiants['ISEP1']=[etudiant for etudiant in Etudiant.objects.filter(classe__name='ISEP1',statut='En cours de formation')]
             etudiants['ISEP2']=[etudiant for etudiant in Etudiant.objects.filter(classe__name='ISEP2',statut='En cours de formation')]
 
-        elif filiere == 'ISE':
-            etudiants = {'ISEP3':[],'ISE1-maths': [], 'ISE1-eco': [], 'ISE2': [], 'ISE3': []}
+        elif filiere == 'ISE1':
+            etudiants = {'ISEP3':[],'ISE1-maths': [], 'ISE1-eco': []}
 
             etudiants['ISEP3']=[etudiant for etudiant in Etudiant.objects.filter(classe__name='ISEP3',statut='En cours de formation')]
             etudiants['ISE1-maths']=[etudiant for etudiant in Etudiant.objects.filter(classe__name='ISE1-maths',statut='En cours de formation')]
             etudiants['ISE1-eco']=[etudiant for etudiant in Etudiant.objects.filter(classe__name='ISE1-eco',statut='En cours de formation')]
+        
+        elif filiere == 'ISE':
+            etudiants = {'ISE2': [], 'ISE3-eco': [],'ISE3-evaluation_impact':[]}
             etudiants['ISE2']=[etudiant for etudiant in Etudiant.objects.filter(classe__name='ISE2',statut='En cours de formation')]
-            etudiants['ISE3']=[etudiant for etudiant in Etudiant.objects.filter(classe__name='ISE3',statut='En cours de formation')]
+            etudiants['ISE3-eco']=[etudiant for etudiant in Etudiant.objects.filter(classe__name='ISE3-eco',statut='En cours de formation')]
+            etudiants['ISE3-evaluation_impact']=[etudiant for etudiant in Etudiant.objects.filter(classe__name='ISE3-evaluation_impact',statut='En cours de formation')]
 
         return etudiants
     
