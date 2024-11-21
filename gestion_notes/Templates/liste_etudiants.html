@@ -37,19 +37,19 @@
 <form id="search-form" class="form" method='get' onsubmit="event.preventDefault();">
     <div class="row">
         <select name="classe" id="choix-classe" class="col-md-3 search-input" onchange="selectClasse()">
-            <option disabled selected>Choisir une classe</option>
+            <option value="" disabled selected>Choisir une classe</option>
             {% for classe in classes %}
                 <option value="{{classe}}" {% if classe == selected_classe %}selected{% endif %}>{{classe}}</option>
             {% endfor %}
         </select>
         <select name="annee" id="choix-annee" class="col-md-3 search-input" onchange="this.form.submit()">
-            <option disabled selected>Choisir une année</option>
+            <option value="" disabled selected>Choisir une année</option>
             {% for annee in annees %}
                 <option value="{{annee}}" {% if annee == selected_annee %}selected{% endif %}>{{annee}}</option>
             {% endfor %}
         </select>
         <select name="statut" class="col-md-3 search-input" onchange="this.form.submit()">
-            <option disabled selected>Choisir un statut</option>
+            <option value="" disabled selected>Choisir un statut</option>
             {% for statut in statuts %}
                 <option value="{{statut}}" {% if statut == selected_statut %}selected{% endif %}>{{statut}}</option>
             {% endfor %}

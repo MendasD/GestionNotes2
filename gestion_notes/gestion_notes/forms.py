@@ -170,7 +170,50 @@ class EtudiantUpdateForm(forms.ModelForm):
             # Retourne l'ancien password si un nouveau n'est pas spécifié
             return self.instance.password
         return password
-    
+
+class EtudiantUpdatePasswordForm(forms.ModelForm):
+    class Meta:
+        model = Etudiant
+        exclude = ('last_login',)
+        widgets = {
+            'password': forms.PasswordInput(),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Rendre le champ password facultatif
+        self.fields['password'].required = False
+        
+        # Rendre les champs non éditables
+        self.fields['matricule'].disabled = True
+        self.fields['name'].disabled = True
+        self.fields['classe'].disabled = True
+        self.fields['sexe'].disabled = True
+        self.fields['date_naissance'].disabled = True
+        self.fields['nationalite'].disabled = True
+        self.fields['annee_inscription'].disabled = True
+        self.fields['statut'].disabled = True
+        self.fields['annee_scolaire_en_cours'].disabled = True
+        self.fields['annee_exclusion'].disabled = True
+        self.fields['annee_diplomation'].disabled = True
+        self.fields['nombre_redoublage'].disabled = True
+        self.fields['heure_absence'].disabled = True
+
+    def save(self, commit=True):
+        etudiant = super().save(commit=False) # obtenir une instance du modèle associée au formulaire sans la sauvegarder immédiatement
+        if self.data.get('password'):
+            etudiant.set_password(self.data['password'])
+        
+        if commit:
+            etudiant.save()
+        return etudiant
+
+    def clean_password(self):
+        password = self.data.get('password')
+        if not password:
+            # Retourne l'ancien password si un nouveau n'est pas spécifié
+            return self.instance.password
+        return password
 
 class ClasseForm(forms.ModelForm):
     class Meta:

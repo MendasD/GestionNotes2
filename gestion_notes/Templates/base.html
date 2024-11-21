@@ -51,8 +51,8 @@
         <button type="button" class="btn-close btn-danger text-reset" data-bs-dismiss="offcanvas" ></button>
     </div><hr>
     <div class="offcanvas-body">
-        <a class="nav-link offcanvas-link" href="#" id="offcanvas-accueil" style="font-size:24px;"><i class="fa fa-home" style="font-size:24px;"></i> Accueil</a>
-        <a class="nav-link offcanvas-link" href="#" id="offcanvas-etudiants" style="font-size:24px;"><i class="fa fa-user" style="font-size:24px;"></i> Étudiants</a>
+        <a class="nav-link offcanvas-link" href="{% url 'notes_etudiants' %}" id="offcanvas-accueil" style="font-size:24px;"><i class="fa fa-home" style="font-size:24px;"></i> Accueil</a>
+        <!-- <a class="nav-link offcanvas-link" href="#" id="offcanvas-etudiants" style="font-size:24px;"><i class="fa fa-user" style="font-size:24px;"></i> Étudiants</a> -->
             <div class="option-link">
                 {% block sousLiens %}
                 
@@ -63,6 +63,7 @@
                 <!-- pour les sous liens -->
             </div>
         <a class="nav-link offcanvas-link" href="{% url 'mes_messages' %}" id="offcanvas-messages" style="font-size:24px;"><i class="fa fa-envelope" style="font-size:24px;"></i> Messages</a>
+        <a class="nav-link offcanvas-link" href="{% url 'modifier_etudiant2' %}" id="offcanvas-etudiants" style="font-size:24px;"><i class="fa fa-user" style="font-size:24px;"></i> Modifier mon profil</a><br>
         <a class="nav-link offcanvas-link" href="{% url 'logout' %}" style="font-size:24px;"><i class="fa fa-sign-out" style="font-size:24px;color:red">Déconnexion</i></a><hr>
         <button class="btn btn-danger" type="button" data-bs-dismiss="offcanvas">Fermer</button>
     </div>
@@ -80,9 +81,9 @@
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'notes_etudiants' %}" id="notes">Mes Notes</a>
                 </li>
-                <li class="nav-item">
+                <!-- <li class="nav-item">
                     <a class="nav-link" href="#">Étudiants</a>
-                </li>
+                </li> -->
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'mes_messages' %}" id="messages">Messages
                     {% block message_non_lues %}

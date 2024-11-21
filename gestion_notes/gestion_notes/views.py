@@ -4,7 +4,7 @@ from urllib.parse import quote
 from django.contrib import messages
 import pandas as pd
 from connexion.models import Etudiant, Note, Matiere, Classe, Responsable, Message, FichiersJoints, Moyenne
-from .forms import NoteUploadForm, MatiereForm, ResponsableForm, EtudiantForm, ClasseForm, EtudiantUpdateForm, OneMessageForm
+from .forms import NoteUploadForm, MatiereForm, ResponsableForm, EtudiantForm, ClasseForm, EtudiantUpdateForm, OneMessageForm, EtudiantUpdatePasswordForm
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from collections import defaultdict
@@ -16,6 +16,9 @@ import os
 import openpyxl 
 from openpyxl import Workbook
 import io
+import xlwings as xw
+from tempfile import NamedTemporaryFile
+
 
 
 
@@ -762,6 +765,8 @@ def Accueil_responsable(request):
 @is_login
 def ajouter_etudiant(request):
     """Ajoute un étudiant dans la base"""
+    responsable = Responsable.objects.get(pk=request.session['user_pk'])
+    classes = responsable.get_classes_by_filiere()
     if request.method == 'POST':
         form = EtudiantForm(request.POST)
         if form.is_valid():
@@ -776,10 +781,10 @@ def ajouter_etudiant(request):
                 return render(request, 'ajouter_etudiant.html', {'form': EtudiantForm()})
         else:
             messages.error(request, form.errors)
-            return render(request, 'ajouter_etudiant.html', {'form': form})
+            return render(request, 'ajouter_etudiant.html', {'form': form,'classes':classes})
     else:
         form = EtudiantForm()
-        return render(request, 'ajouter_etudiant.html', {'form': form})
+        return render(request, 'ajouter_etudiant.html', {'form': form,'classes':classes})
 
 @is_login
 def charger_etudiants(request):
@@ -1032,10 +1037,33 @@ def modifier_etudiant(request,matricule):
         form = EtudiantUpdateForm(instance=Etudiant.objects.get(pk=matricule))
         return render(request, 'modifier_etudiant.html', {'form': form})
     
-def modifier_responsable(request,id_responsable):
+@is_login
+def modifier_etudiant2(request):
+    theme = request.session.get('theme', 'light')
+    if request.method == 'POST':
+        form = EtudiantUpdatePasswordForm(request.POST, instance=Etudiant.objects.get(pk=request.session['user_pk']))
+        if form.is_valid():
+            etudiant = Etudiant.objects.get(pk=request.session['user_pk'])
+            password = form.data['password']
+            if not check_password(password, etudiant.password):
+                etudiant.password = make_password(password)
+            form.save()
+            request.session['last_activity'] = {'name':'modifier_profil','time':timezone.now().isoformat()}
+            messages.success(request, f'Vos informations ont été modifié avec succès')
+            return redirect('accueil_etudiant')
+        else:
+            messages.error(request, form.errors)
+            return render(request, 'modifier_etudiant.html', {'form': form})
+    else:
+        form = EtudiantUpdatePasswordForm(instance=Etudiant.objects.get(pk=request.session['user_pk']))
+        return render(request, 'etudiant_modifier_profil.html', {'form': form,'theme':theme})
+
+@is_login  
+def modifier_responsable(request):
     if request.method == 'POST':
         try:
-            responsable = Responsable.objects.get(pk=id_responsable)
+            #responsable = Responsable.objects.get(pk=id_responsable)
+            responsable = Responsable.objects.get(pk=request.session['user_pk'])
             form = ResponsableForm(request.POST, instance=responsable)
             if form.is_valid():
                 password = form.data['password']
@@ -1043,21 +1071,22 @@ def modifier_responsable(request,id_responsable):
                     responsable.password = make_password(password)
                 form.save()
                 request.session['last_activity'] = {'name':'modifier_responsable','time':timezone.now().isoformat()}
-                messages.success(request, f'Responsable immatriculé {id_responsable} modifié avec succès')
+                messages.success(request, f'Vos informations ont été modifié avec succès')
                 return redirect('accueil_responsable')
             else:
                 messages.error(request, form.errors)
                 return render(request, 'modifier_responsable.html', {'form': form})
         except Responsable.DoesNotExist:
-            messages.error(request, "Aucun responsable avec cet identifiant dans la base.")
+            messages.error(request, "Méthode non autorisée !!!")
             return redirect('accueil_responsable')
     else:
         try:
-            responsable = Responsable.objects.get(pk=id_responsable)
+            #responsable = Responsable.objects.get(pk=id_responsable)
+            responsable = Responsable.objects.get(pk=request.session['user_pk'])
             form = ResponsableForm(instance=responsable)
             return render(request, 'modifier_responsable.html', {'form': form})
         except Responsable.DoesNotExist:
-            messages.error(request, "Aucun responsable avec cet identifiant dans la base.")
+            messages.error(request, "Méthode non autorisée !!!")
             return redirect('accueil_responsable')
         
 def set_theme(request):
@@ -1410,8 +1439,8 @@ def modifier_et_telecharger_excel(request):
 
     if request.method == 'GET':
         # Récupérer les données de la requête 
-        annee_scolaire = request.GET.get('annee_scolaire')
-        classe_name = request.GET.get('classe')
+        annee_scolaire = request.GET.get('annee_scolaire') if request.GET.get('annee_scolaire') else None
+        classe_name = request.GET.get('classe') if request.GET.get('classe') else None
 
         # Vérifier si les données sont présentes
         if annee_scolaire and classe_name:
@@ -1491,16 +1520,21 @@ def modifier_et_telecharger_excel(request):
             chemin_fichier = 'modeles/modele_ise3_eval.xlsx'
             
             # Ouvrir le fichier Excel
-            wb = openpyxl.load_workbook(chemin_fichier)
+            #wb = openpyxl.load_workbook(chemin_fichier)
+
+            app = xw.App(visible=False) # Pour que en ouvrant le fichier excel, ce ne soit pas visible
+            wb  = app.books.open(chemin_fichier)
 
             def remplir_feuille_semestre(semester,grand_dict,matieres):
                 """Cette fonction permet de remplir le fichier excel a partir des informations collectées au prealable"""
 
-                ws = wb[semester]  # Sélectionner la feuille active (ou spécifiez une feuille spécifique avec `wb['Nom de la feuille']`)
-
+                #ws = wb[semester]  # Sélectionner la feuille active (ou spécifiez une feuille spécifique avec `wb['Nom de la feuille']`)
+                ws = wb.sheets[semester] # avec xlwings
+                
                 ligne = 5
 
                 for etudiant, data in grand_dict.items():
+                    """
                     ws.cell(row=ligne, column=1, value=etudiant.pk)
                     ws.cell(row=ligne, column=2, value=etudiant.name)
                     ws.cell(row=ligne, column=3, value=etudiant.sexe)
@@ -1509,13 +1543,27 @@ def modifier_et_telecharger_excel(request):
                     ws.cell(row=ligne, column=6, value=etudiant.annee_inscription)
                     ws.cell(row=ligne, column=7, value=etudiant.email)
                     ws.cell(row=ligne, column=8, value=etudiant.heure_absence)
+                    """
+                    ws.range(f'A{ligne}').value = etudiant.pk
+                    ws.range(f'B{ligne}').value = etudiant.name
+                    ws.range(f'C{ligne}').value = etudiant.sexe
+                    ws.range(f'D{ligne}').value = etudiant.date_naissance
+                    ws.range(f'E{ligne}').value = etudiant.nationalite
+                    ws.range(f'F{ligne}').value = etudiant.annee_inscription
+                    ws.range(f'G{ligne}').value = etudiant.email
+                    ws.range(f'H{ligne}').value = etudiant.heure_absence
                     
                     # Remplir les notes pour chaque matière
                     col_base = 9  # Début des colonnes pour les matières
                     for matiere in matieres:
+                        """
                         ws.cell(row=ligne, column=col_base, value=data[matiere]['note1'])
                         ws.cell(row=ligne, column=col_base + 1, value=data[matiere]['note2'])
                         ws.cell(row=ligne, column=col_base + 2, value=data[matiere]['moyenne'])
+                        """
+                        ws.range(f'{xw.utils.col_name(col_base)}{ligne}').value = data[matiere]['note1']
+                        ws.range(f'{xw.utils.col_name(col_base + 1)}{ligne}').value = data[matiere]['note2']
+                        ws.range(f'{xw.utils.col_name(col_base + 2)}{ligne}').value = data[matiere]['moyenne']
                         col_base += 3  # Passer aux colonnes suivantes pour la prochaine matière
 
                     ligne += 1
@@ -1536,30 +1584,40 @@ def modifier_et_telecharger_excel(request):
             #fichier_temp = 'modeles/fichier_temp.xlsx'
             #wb.save(fichier_temp)
 
-            fichier_temp = io.BytesIO()
-            wb.save(fichier_temp)
-            fichier_temp.seek(0)
+            #fichier_temp = io.BytesIO()
+            #wb.save(fichier_temp)
+            #fichier_temp.seek(0)
 
             # Créer une réponse HTTP pour le téléchargement
             nom_fichier = f"recapitulatif_{annee_scolaire}_{classe.name}_.xlsx"
 
             # Préparez la réponse HTTP
-            response = HttpResponse(
+            """response = HttpResponse(
                 fichier_temp,
                 content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
             )
             response['Content-Disposition'] = f'attachment; filename={nom_fichier}'
+
+            """
+            # Sauvegarder dans un fichier temporaire
+            with NamedTemporaryFile(delete=False, suffix=".xlsx") as tmp:
+                fichier_temp = tmp.name
+            wb.save(fichier_temp)  # Sauvegarde
+            wb.close()  # Ferme le classeur
+            xw.apps.active.quit()  # Quitte Excel
             
-            #with open(fichier_temp, 'rb') as f:
-                #response = HttpResponse(f.read(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-                #response['Content-Disposition'] = f'attachment; filename={nom_fichier}'
+            with open(fichier_temp, 'rb') as f:
+                response = HttpResponse(f.read(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+                response['Content-Disposition'] = f'attachment; filename={nom_fichier}'
 
             # Supprimer le fichier temporaire après le téléchargement
-            #os.remove(fichier_temp)
+            os.remove(fichier_temp)
 
             return response
         else:
             # Gérer le cas où les données sont manquantes
-            return HttpResponse("Les données sont manquantes.", status=400)
+            messages.error(request, 'Veuillez sélectionner une année scolaire et une classe.')
+            return redirect('liste_etudiants')  # Rediriger vers la page des notes
+            
 
     
