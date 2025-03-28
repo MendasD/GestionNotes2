@@ -5,6 +5,15 @@
     <link rel="stylesheet" href="{% static 'css/add_matieres.css' %}">
 {% endblock extra_styles %}
 
+{% block breadcrumb %}
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'accueil_responsable' %}">Accueil</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'liste_etudiants' %}">Liste des étudiants</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Ajouter un étudiant</li>
+    </ol>
+
+{% endblock breadcrumb %}
+
 {% block content %}
     <h2 class="mb-4">Ajouter un nouvel étudiant</h2>
 

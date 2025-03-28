@@ -757,16 +757,18 @@ def Accueil_responsable(request):
     theme = request.session['theme'] if 'theme' in request.session else ''
     responsable = Responsable.objects.get(id = request.session['user_pk'])
     classes = responsable.get_classes_by_filiere()
+    username = responsable.name or ""
 
     last_login = responsable.last_login
     last_activity = request.session.get('last_activity')
-    return render(request, 'responsable.html',{'classes':classes,'last_login':last_login,'last_activity':last_activity,'theme':theme})
+    return render(request, 'responsable.html',{'classes':classes,'last_login':last_login,'last_activity':last_activity,'theme':theme,'username':username})
 
 @is_login
 def ajouter_etudiant(request):
     """Ajoute un étudiant dans la base"""
     responsable = Responsable.objects.get(pk=request.session['user_pk'])
     classes = responsable.get_classes_by_filiere()
+    username = responsable.name or ""
     if request.method == 'POST':
         form = EtudiantForm(request.POST)
         if form.is_valid():
@@ -784,7 +786,7 @@ def ajouter_etudiant(request):
             return render(request, 'ajouter_etudiant.html', {'form': form,'classes':classes})
     else:
         form = EtudiantForm()
-        return render(request, 'ajouter_etudiant.html', {'form': form,'classes':classes})
+        return render(request, 'ajouter_etudiant.html', {'form': form,'classes':classes,'username':username})
 
 @is_login
 def charger_etudiants(request):
@@ -793,10 +795,12 @@ def charger_etudiants(request):
     try: 
         responsable = Responsable.objects.get(pk=request.session['user_pk'])
         classes = responsable.get_classes_by_filiere()
+       
     except Responsable.DoesNotExist:
         classes = Classe.objects.none()
         messages.error(request, "Vous n'êtes pas autorisé à accéder à cette page.")
-    return render(request, 'charger_etudiants.html', {'classes': classes})
+    username = responsable.name if responsable.name else ""
+    return render(request, 'charger_etudiants.html', {'classes': classes,'username':username})
 
 
 def ajouter_etudiants(request):

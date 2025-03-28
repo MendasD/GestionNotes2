@@ -1,6 +1,14 @@
 {% extends "base2.html" %}
 {% load static %}
 
+{% block breadcrumb %}
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'accueil_responsable' %}">Accueil</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Liste des étudiants</li>
+    </ol>
+
+{% endblock breadcrumb %}
+
 {% block content %}
 
 <style>
@@ -33,6 +41,7 @@
         margin-right: 7px;
     }
 </style>
+
 
 <form id="search-form" class="form" method='get' onsubmit="event.preventDefault();">
     <div class="row">
