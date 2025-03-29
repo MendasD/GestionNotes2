@@ -1622,6 +1622,39 @@ def modifier_et_telecharger_excel(request):
             # Gérer le cas où les données sont manquantes
             messages.error(request, 'Veuillez sélectionner une année scolaire et une classe.')
             return redirect('liste_etudiants')  # Rediriger vers la page des notes
+
+
+
+
+
+def interaction_page(request):
+    results = []
+    if request.method == 'POST':
+        data = request.POST.get('data_field')
+        # Ajouter ou filtrer des données dans la base de données
+        #YourModel.objects.create(name=data, value=data)
+        return redirect('interaction_page')  # Rediriger vers la même page pour rafraîchir les résultats
+
+    #results = YourModel.objects.all()
+    return render(request, 'modele.html', {'results': results})
+
+
+from django.db.models import Avg, Count
+from django.utils import timezone, timesince
+from datetime import timedelta
+@is_login
+def dashboard(request):
+    context = {
+        'eleves_count': Etudiant.objects.count(),
+        'girls_count': Etudiant.objects.filter(sexe="F").count(),
+        'moyenne_generale': Note.objects.aggregate(Avg('note'))['note__avg'] or 0,
+        'nouvelles_notes': Note.objects.filter(created_at__gte=timezone.now()-timedelta(days=7)).count(),
+        'recent_notes': Note.objects.order_by('-created_at')[:5]
+    }
+    return render(request, 'dashboard.html', context)
+
+
+
             
 
     

@@ -1,0 +1,315 @@
+{% extends 'base2.html' %}
+{% load static %}
+
+{% block content %}
+
+
+<style>
+/* static/css/dashboard.css */
+
+:root {
+    --primary: #3498db;
+    --secondary: #2c3e50;
+    --success: #2ecc71;
+    --danger: #e74c3c;
+    --warning: #f39c12;
+    --info: #1abc9c;
+    --light: #ecf0f1;
+    --dark: #34495e;
+}
+
+.dashboard-container {
+    display: flex;
+    min-height: 100vh;
+    background-color: #f5f7fa;
+}
+
+
+.main-content {
+    flex: 1;
+    padding: 20px;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.user-actions {
+    display: flex;
+    align-items: center;
+}
+
+.notification-badge {
+    background: var(--danger);
+    color: white;
+    border-radius: 50%;
+    width: 25px;
+    height: 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+}
+
+.avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.stats-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.stat-card {
+    padding: 20px;
+    border-radius: 10px;
+    color: white;
+    display: flex;
+    align-items: center;
+}
+
+.stat-card.bg-primary { background: var(--primary); }
+.stat-card.bg-success { background: var(--success); }
+.stat-card.bg-warning { background: var(--warning); }
+.stat-card.bg-info { background: var(--info); }
+
+.stat-icon {
+    font-size: 2rem;
+    margin-right: 20px;
+}
+
+.stat-info h3 {
+    font-size: 1.8rem;
+    margin: 0;
+}
+
+.stat-info p {
+    margin: 5px 0 0;
+    opacity: 0.8;
+}
+
+.card {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 30px;
+}
+
+.card-header {
+    padding: 20px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-body {
+    padding: 20px;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th, .table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.table th {
+    font-weight: 600;
+}
+
+.badge {
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.badge-success {
+    background: var(--success);
+    color: white;
+}
+
+.badge-danger {
+    background: var(--danger);
+    color: white;
+}
+
+.btn {
+    padding: 8px 16px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.btn-primary {
+    background: var(--primary);
+    color: white;
+}
+
+.btn-sm {
+    padding: 5px 10px;
+    font-size: 0.8rem;
+}
+
+</style>
+
+<div class="dashboard-container">
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="header">
+            <h2>Tableau de bord</h2>
+            <div class="user-actions">
+                <span class="notification-badge">3</span>
+                <img src="{% static 'images/avatar.png' %}" alt="Avatar" class="avatar">
+            </div>
+        </div>
+
+        <div class="stats-cards">
+            <!-- Card 1: Nombre d'élèves -->
+            <div class="stat-card bg-primary">
+                <div class="stat-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>{{ eleves_count }}</h3>
+                    <p>Élèves</p>
+                </div>
+            </div>
+
+            <!-- Card 2: Nombre de professeurs -->
+            <div class="stat-card bg-success">
+                <div class="stat-icon">
+                    <i class="fas fa-female"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>{{ girls_count | default:'0' }}</h3>
+                    <p>Filles</p>
+                </div>
+            </div>
+
+            <!-- Card 3: Moyenne générale -->
+            <div class="stat-card bg-warning">
+                <div class="stat-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>{{ moyenne_generale|floatformat:2 }}</h3>
+                    <p>Moyenne générale</p>
+                </div>
+            </div>
+
+            <!-- Card 4: Dernières notes -->
+            <div class="stat-card bg-info">
+                <div class="stat-icon">
+                    <i class="fas fa-book"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>{{ nouvelles_notes }}</h3>
+                    <p>Nouvelles notes</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Graphique des performances -->
+        <div class="card">
+            <div class="card-header">
+                <h3>Performances par matière</h3>
+            </div>
+            <div class="card-body">
+                <canvas id="performanceChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Dernières notes ajoutées -->
+        <div class="card">
+            <div class="card-header">
+                <h3>Dernières notes</h3>
+                <a href="#" class="btn btn-sm btn-primary">Voir tout</a>
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Élève</th>
+                            <th>Matière</th>
+                            <th>Note</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for note in recent_notes %}
+                        <tr>
+                            <td>{{ note.etudiant.name }}</td>
+                            <td>{{ note.matiere }}</td>
+                            <td><span class="badge {% if note.note >= 12 %}badge-success{% else %}badge-danger{% endif %}">{{ note.note }}</span></td>
+                            <td>{{ note.created_at|date:"d/m/Y" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// static/js/dashboard.js
+document.addEventListener('DOMContentLoaded', function() {
+    // Graphique des performances
+    const ctx = document.getElementById('performanceChart').getContext('2d');
+    
+    // Ici vous devriez récupérer les données depuis votre API ou les passer via Django
+    const performanceChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Maths', 'Français', 'Histoire', 'SVT', 'Physique', 'Anglais'],
+            datasets: [{
+                label: 'Moyenne par matière',
+                data: [12.5, 14.2, 11.8, 13.4, 10.9, 15.1],
+                backgroundColor: [
+                    'rgba(52, 152, 219, 0.7)',
+                    'rgba(46, 204, 113, 0.7)',
+                    'rgba(241, 196, 15, 0.7)',
+                    'rgba(155, 89, 182, 0.7)',
+                    'rgba(231, 76, 60, 0.7)',
+                    'rgba(26, 188, 156, 0.7)'
+                ],
+                borderColor: [
+                    'rgba(52, 152, 219, 1)',
+                    'rgba(46, 204, 113, 1)',
+                    'rgba(241, 196, 15, 1)',
+                    'rgba(155, 89, 182, 1)',
+                    'rgba(231, 76, 60, 1)',
+                    'rgba(26, 188, 156, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 20
+                }
+            }
+        }
+    });
+});
+</script>
+
+{% endblock %}

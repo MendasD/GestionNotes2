@@ -27,6 +27,18 @@
 <body style="display: flex; flex-direction: column; min-height: 100vh; ">
     
     <style>
+                
+        :root {
+            --primary: #3498db;
+            --secondary: #2c3e50;
+            --success: #2ecc71;
+            --danger: #e74c3c;
+            --warning: #f39c12;
+            --info: #1abc9c;
+            --light: #ecf0f1;
+            --dark: #34495e;
+        }
+
         .offcanvas-link:hover {
             color: rgb(116, 70, 15) !important;
         }
@@ -51,16 +63,48 @@
             top: 56px; /* Décale le sidebar sous la navbar */
             left: 0;
             padding-top: 20px;
+            background: var(--secondary);
+            min-height: calc(100vh-100px);
+            transition: all 0.3s;
         }
-        .sidebar a {
+
+        .sidebar-header {
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .sidebar-menu {
+            padding: 0;
+            list-style: none;
+        }
+
+        .sidebar-menu a {
+            padding: 15px 20px;
+            transition: all 0.3s;
             color: white;
-            padding: 10px 20px;
+            
             display: block;
             text-decoration: none;
         }
-        .sidebar a:hover {
-            background-color: #495057;
+
+        .sidebar-menu a:hover {
+            background: rgba(0, 0, 0, 0.2);
+            cursor: pointer;
         }
+
+        .sidebar-menu a.active {
+            background: var(--primary);
+        }
+
+        .sidebar-menu a a {
+            color: white;
+            text-decoration: none;
+        }
+
+        .sidebar-menu a i {
+            margin-right: 10px;
+        }
+
         .content {
             margin-left: 15%; /* Décale le contenu principal pour ne pas être recouvert par le sidebar */
             padding: 20px 20px;
@@ -85,6 +129,7 @@
         /* Ajouter classe pour afficher le sidebar */
         .sidebar.active {
             transform: translateX(0);
+            background: var(--primary);
         }
 
         .sidebar.deactive {
@@ -240,21 +285,28 @@
     {% block navigation_laterale %}
     <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
+
+        <div class="sidebar-header">
+            <h3>Menu</h3>
+            <p>Bienvenue, {{ request.user.name }}</p>
+        </div>
+
+        <div class="sidebar-menu">
         <!-- Acceuil -->
-        <a href="{% url 'accueil_responsable' %}"><i class="fas fa-home"></i> Accueil</a>
+        <a class="nav-link"  href="{% url 'accueil_responsable' %}"><i class="fas fa-home"></i> Accueil</a>
         <!-- Etudiants -->
         <div class="dropdown dropend">
             <a role="button" class="dropdown-toggle" data-bs-toggle="dropdown"><i class="fas fa-users"></i> Etudiants</a>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="etudiantDropdown">
                 <li><h5 class="dropdown-header" style="color: blue; text-align: center;">Général</h5></li>
-                <li><a class="dropdown-item" style="color: orange;" href="{% url 'liste_etudiants' %}"> Liste des étudiants</a></li>
-                <li><a class="dropdown-item" style="color: orange;" href="{% url 'ajouter_etudiant' %}"> Ajouter un étudiant</a></li>
-                <li><a class="dropdown-item" style="color: orange;" href="{% url 'charger_etudiants' %}"> Ajouter une liste d'étudiants</a></li>
+                <li><a class="dropdown-item nav-link" style="color: orange;" href="{% url 'liste_etudiants' %}"> Liste des étudiants</a></li>
+                <li><a class="dropdown-item nav-link" style="color: orange;" href="{% url 'ajouter_etudiant' %}"> Ajouter un étudiant</a></li>
+                <li><a class="dropdown-item nav-link" style="color: orange;" href="{% url 'charger_etudiants' %}"> Ajouter une liste d'étudiants</a></li>
                 <li><h5 class="dropdown-header" style="color: blue; text-align: center;">Liste des classes</h5></li>
                 
                 {% if classes %}
                         {% for classe in classes %}
-                            <li><a class="dropdown-item-text" style="color: orange;" href="{% url 'liste_etudiants' %}">{{classe}}</a></li>
+                            <li><a class="dropdown-item-text nav-link" style="color: orange;" href="{% url 'liste_etudiants' %}">{{classe}}</a></li>
                         {% endfor %}
                 {% endif %}
 
@@ -264,28 +316,36 @@
         <div class="dropdown dropend">
             <a role="button" class="dropdown-toggle" data-bs-toggle="dropdown"><i class="fas fa-book"></i> Notes</a>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="noteDropdown">
-                <li><a class="dropdown-item" style="color: orange;" href="{% url 'responsable_notes' %}"> Voir les notes</a></li>
-                <li><a class="dropdown-item" style="color: orange;" href="{% url 'charger_notes' %}"> Nouvelle feuille de note</a></li>
+                <li><a class="dropdown-item nav-link" style="color: orange;" href="{% url 'responsable_notes' %}"> Voir les notes</a></li>
+                <li><a class="dropdown-item nav-link" style="color: orange;" href="{% url 'charger_notes' %}"> Nouvelle feuille de note</a></li>
             </ul>
         </div>
         <!-- Messages -->
         <div class="dropdown dropend">
             <a role="button" class="dropdown-toggle" data-bs-toggle="dropdown"><i class="fas fa-users"></i> Messages</a>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="noteDropdown">
-                <li><a class="dropdown-item" style="color: orange;" href="{% url 'messages' %}"> Messagerie</a></li>
-                <li><a class="dropdown-item" style="color: orange;" href="{% url 'new_message' %}"> Nouveau message</a></li>
+                <li><a class="dropdown-item nav-link" style="color: orange;" href="{% url 'messages' %}"> Messagerie</a></li>
+                <li><a class="dropdown-item nav-link" style="color: orange;" href="{% url 'new_message' %}"> Nouveau message</a></li>
             </ul>
         </div>
 
         <!-- Profil -->
-        <a href="{% url 'modifier_responsable' %}"><i class="fa fa-user"></i> Profil</a>
+        <a href="{% url 'modifier_responsable' %}" class="nav-link"><i class="fa fa-user"></i> Profil</a>
+
+        <!-- Base intelligente -->
+        <a href="{% url 'interaction_page' %}" class="nav-link"><i class="fa fa-database"></i> Base intelligente</a>
+
+        <!-- Tableau de bord -->
+        <a href="{% url 'dashboard' %}" class="nav-link"><i class="fas fa-tachometer-alt"></i> Tableau de bord</a>
 
         <!-- Paramètres -->
-        <a href="#"><i class="fas fa-cog"></i> Paramètres</a>
+        <a href="" class="nav-link"><i class="fas fa-cog"></i> Paramètres</a>
         <hr>
 
         <!-- Déconnexion -->
         <a href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> Déconnexion</a>
+
+        </div>
 
     </div>
     {% endblock navigation_laterale %}
@@ -401,6 +461,31 @@
                 document.getElementById("mainContent").classList.remove('reshifted');
             };
         });
+    </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+        let links = document.querySelectorAll(".nav-link");
+        let currentUrl = window.location.pathname; // Récupère la page actuelle
+
+        links.forEach(link => {
+        if (link.getAttribute("href") === currentUrl) {
+            if(!link.classList.contains("dropdown-item") && !link.classList.contains("dropdown-item-text")){    
+                link.classList.add("active"); // Ajoute la classe active au lien
+            }
+
+            // Vérifier si le lien est dans un dropdown et activer le parent
+            let dropdown = link.closest(".dropdown-menu"); // Trouve le menu parent
+            if (dropdown) {
+                let parentLink = dropdown.previousElementSibling; // Sélectionne le <a class="dropdown-toggle">
+                if (parentLink) {
+                    parentLink.classList.add("active"); // Active le parent
+                }
+            }
+        }
+        });
+
+    });
     </script>
 
     {% block scripts %}

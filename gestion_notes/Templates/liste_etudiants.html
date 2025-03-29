@@ -288,8 +288,13 @@
 
 <script>
     function selectClasse() {
-        classe = document.getElementById('choix-classe').value;
-        groupe_classe = document.querySelectorAll('.groupe-classe');
+        let classe = document.getElementById('choix-classe').value;
+        let groupe_classe = document.querySelectorAll('.groupe-classe');
+
+        if (classe === ""){
+            classe = groupe_classe[0].getAttribute('id'); // selectionner la première classe par defaut, si aucune selection faite
+            console.log(classe);
+        };
 
         groupe_classe.forEach(function(groupe) {
             groupe_id = groupe.getAttribute('id');
@@ -301,6 +306,8 @@
             }
         });
     }
+
+    selectClasse();
 </script>
 
 {% endblock content %}

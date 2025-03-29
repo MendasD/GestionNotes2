@@ -57,6 +57,9 @@ urlpatterns = [
     path('responsable/new_message/',views.new_message,name='new_message'),
     path('responsable/notes_etudiants/', views.Responsable_notes, name='responsable_notes'),
     path('responsable/notes_etudiants/telecharger_recapitulatif/', views.modifier_et_telecharger_excel, name='telecharger_recap'),
+
+    path('responsable/base_intelligente/', views.interaction_page, name='interaction_page'),
+    path('responsable/dashboard/', views.dashboard, name='dashboard'),
    
     
    

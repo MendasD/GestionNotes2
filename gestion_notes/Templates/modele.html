@@ -1,0 +1,113 @@
+{% extends "base2.html" %}
+
+{% block content %}
+
+<style>
+    body {
+    font-family: 'Arial', sans-serif;
+    /*background-color: #f8f9fa;*/
+}
+
+textarea {
+    border-radius: 10px;
+    padding: 10px;
+}
+
+#submitBtn {
+    border-radius: 20px;
+    transition: background-color 0.3s ease;
+}
+
+#submitBtn:hover {
+    background-color: #28a745;
+}
+
+#responseContainer {
+    /*display: none;*/
+    transition: opacity 0.5s ease;
+}
+
+/*#responseContainer.d-none {
+    display: none;
+}*/
+
+#responseContainer {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+}
+
+</style>
+
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card p-4 shadow-sm">
+                <h2 class="text-center text-primary mb-4">Interagir avec l'IA pour accéder aux données</h2>
+                
+                <!-- Formulaire de saisie de la question -->
+                <div class="mb-3">
+                    <label for="userInput" class="form-label">Posez votre question ou donnez une commande :</label>
+                    <textarea class="form-control" id="userInput" rows="4" placeholder="Entrez votre question ici..." required></textarea>
+                </div>
+
+                <button id="submitBtn" class="btn btn-success w-100">Envoyer</button>
+
+                <!-- Zone de réponse de l'IA -->
+                <div id="responseContainer" class="mt-4 p-3 border rounded bg-light d-none">
+                    <h4 class="text-info">Réponse de l'IA</h4>
+                    <div id="aiResponse" class="text-muted">Chargement...</div>
+                    <div id="aiTable" class="mt-4"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('submitBtn').addEventListener('click', function() {
+        var userInput = document.getElementById('userInput').value;
+        
+        // Afficher une animation de chargement
+        document.getElementById('responseContainer').classList.add('d-none');
+        document.getElementById('aiResponse').textContent = 'Chargement...';
+
+        if (userInput.trim() !== '') {
+            // Requête AJAX pour envoyer la question à la vue Django
+            fetch("{% url 'interaction_page' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    question: userInput
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Affichage de la réponse texte
+                document.getElementById('aiResponse').textContent = data.answer;
+                
+                // Si une table est renvoyée, on l'affiche
+                if (data.table_html) {
+                    document.getElementById('aiTable').innerHTML = data.table_html;
+                } else {
+                    document.getElementById('aiTable').innerHTML = '';
+                }
+                
+                // Afficher la réponse
+                document.getElementById('responseContainer').classList.remove('d-none');
+            })
+            .catch(error => {
+                document.getElementById('aiResponse').textContent = "Une erreur est survenue. Essayez encore.";
+                document.getElementById('responseContainer').classList.remove('d-none');
+            });
+        }
+    });
+</script>
+{% endblock %}
