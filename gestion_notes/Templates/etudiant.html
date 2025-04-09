@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_styles %}
+    <link rel="stylesheet" href="{% static 'css/responsable.css' %}">
+    <style>
+        body {
+            background-image: url("{% static 'images/ensae_bg2.png' %}");
+            background-position: center -10% -5%;
+            background-size: cover;
+            background-repeat: no-repeat;
+        }
+    </style>
+{% endblock extra_styles %}
+
+{% block content %}
+
+
+    <div id="dashboard" style="margin-top: 10%; margin-bottom: 5%">
+        <button type="button" id="ChargerNotes" class="btn btn-primary" data-bs-toggle="tooltip" title="Consultez vos notes" onclick="window.location.href='{% url 'notes_etudiants' %}'">Mes notes</button>
+        <button type="button" class="btn btn-primary" data-bs-toggle="tooltip" title="Consultez les cours progammés" onclick="window.location.href='{% url 'mon_emploi_de_temps' %}'">Emploi de temps</button>
+        <button type="button" class="btn btn-primary" data-bs-toggle="tooltip" title="Consultez vos messages" onclick="window.location.href='{% url 'mes_messages' %}'">Messagerie</button>
+        <button type="button" class="btn btn-primary" data-bs-toggle="tooltip" title="Consultez et modifiez vos informations" onclick="window.location.href='{% url 'modifier_etudiant2' %}'">Mon profil</button>
+    </div>
+
+{% endblock content %}
+
+
+{% block scripts %}
+    <script>
+        function ActiveLink(){
+            var notesLink = document.getElementById('accueil')
+            notesLink.classList.add('active')
+        }
+
+        ActiveLink()
+    </script>
+
+    <!-- script pour initialiser les tooltips (messages qui apparaissent quand on survole un element) -->
+    <script src="{% static 'javascript/tooltip.js' %}" ></script>
+
+    <script src="{% static 'javascript/etudiant.js' %}" ></script>
+
+{% endblock scripts %}

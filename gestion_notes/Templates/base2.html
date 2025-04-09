@@ -18,6 +18,8 @@
 
 
     <link rel="stylesheet" href="{% static 'css/style2.css' %}">
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    
     {% block extra_styles %}
     {% endblock %}
     
@@ -26,144 +28,6 @@
 
 <body style="display: flex; flex-direction: column; min-height: 100vh; ">
     
-    <style>
-                
-        :root {
-            --primary: #3498db;
-            --secondary: #2c3e50;
-            --success: #2ecc71;
-            --danger: #e74c3c;
-            --warning: #f39c12;
-            --info: #1abc9c;
-            --light: #ecf0f1;
-            --dark: #34495e;
-        }
-
-        .offcanvas-link:hover {
-            color: rgb(116, 70, 15) !important;
-        }
-        .option-link {
-            padding: 3%;
-            margin-left: 3px;
-        }
-        .monfooter {
-            background-color: #f1f1f1; /* Couleur de fond du footer */
-            text-align: center;
-            padding: 10px 0;
-            margin-top: 10%;
-        }
-
-        /* Assure que le sidebar prend toute la hauteur de l'écran sans chevaucher la navbar */
-        .sidebar {
-            width: 15%;
-            height: calc(100vh - 56px); /* Hauteur totale - hauteur de la navbar */
-            background-color: #343a40; /* Couleur du sidebar */
-            color: white;
-            position: fixed; /* Fixe le sidebar sur le côté gauche */
-            top: 56px; /* Décale le sidebar sous la navbar */
-            left: 0;
-            padding-top: 20px;
-            background: var(--secondary);
-            min-height: calc(100vh-100px);
-            transition: all 0.3s;
-        }
-
-        .sidebar-header {
-            padding: 20px;
-            background: rgba(0, 0, 0, 0.2);
-        }
-
-        .sidebar-menu {
-            padding: 0;
-            list-style: none;
-        }
-
-        .sidebar-menu a {
-            padding: 15px 20px;
-            transition: all 0.3s;
-            color: white;
-            
-            display: block;
-            text-decoration: none;
-        }
-
-        .sidebar-menu a:hover {
-            background: rgba(0, 0, 0, 0.2);
-            cursor: pointer;
-        }
-
-        .sidebar-menu a.active {
-            background: var(--primary);
-        }
-
-        .sidebar-menu a a {
-            color: white;
-            text-decoration: none;
-        }
-
-        .sidebar-menu a i {
-            margin-right: 10px;
-        }
-
-        .content {
-            margin-left: 15%; /* Décale le contenu principal pour ne pas être recouvert par le sidebar */
-            padding: 20px 20px;
-            padding-top: 20px; /* Ajoute un espace pour ne pas chevaucher la navbar */
-            transition: margin-left 0.3s ease-in-out;
-            max-width: 80%; /* Évite le débordement */
-            overflow-x: hidden; /* Cache le débordement horizontal */
-            box-sizing: border-box; /* Prévient le dépassement dû au padding */
-        }
-
-        /* Cacher le sidebar sur petits écrans */
-        @media (max-width: 992px) {
-            .sidebar {
-                transform: translateX(-100%);
-            }
-            .content {
-                margin-left: 0;
-                padding: 15px;
-            }
-        }
-
-        /* Ajouter classe pour afficher le sidebar */
-        .sidebar.active {
-            transform: translateX(0);
-            background: var(--primary);
-        }
-
-        .sidebar.deactive {
-            transform: translateX(0);
-            display: none;
-            
-        }
-
-        .content.shifted {
-            margin-left: 15%;
-        }
-        .content.reshifted {
-            margin-left: 0px;
-            max-width: 100%;
-        }
-
-        /* Style de la hiérarchie des pages */
-        .breadcrumb {
-            background: #f8f9fa;
-            padding: 10px 15px;
-            border-radius: 5px;
-            font-size: 14px;
-        }
-
-        .breadcrumb a {
-            text-decoration: none;
-            color: #007bff;
-        }
-
-        .breadcrumb a:hover {
-            text-decoration: underline;
-        }
-    </style>
-
     <!-- Offcanvas Sidebar -->
     <div class="offcanvas offcanvas-start" id="menucache">
         <div class="offcanvas-header">
@@ -332,8 +196,18 @@
         <!-- Profil -->
         <a href="{% url 'modifier_responsable' %}" class="nav-link"><i class="fa fa-user"></i> Profil</a>
 
-        <!-- Base intelligente -->
+        <!-- Base intelligente 
         <a href="{% url 'interaction_page' %}" class="nav-link"><i class="fa fa-database"></i> Base intelligente</a>
+        -->
+
+        <!-- Emploi de temps -->
+        <div class="dropdown dropend">
+            <a role="button" class="dropdown-toggle" data-bs-toggle="dropdown"><i class="fas fa-calendar-alt"></i> Emploi de temps</a>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="noteDropdown">
+                <li><a class="dropdown-item nav-link" style="color: orange;" href="{% url 'emploi_de_temps' %}"> Voir emplois de temps</a></li>
+                <li><a class="dropdown-item nav-link" style="color: orange;" href="{% url 'faire_emploi_de_temps' %}"> Nouvel emploi de temps</a></li>
+            </ul>
+        </div>
 
         <!-- Tableau de bord -->
         <a href="{% url 'dashboard' %}" class="nav-link"><i class="fas fa-tachometer-alt"></i> Tableau de bord</a>
@@ -376,7 +250,12 @@
         {% endblock %}
     </div>
 
-    
+    <!-- Loader pour indiquer un processus en cours -->
+    <div id="loader" style="display: none;">
+        <div class="spinner"></div>
+        <p class="loader-text">Traitement en cours...</p>
+    </div>
+
     
 
     <footer class="bg-light text-center text-lg-start mt-auto py-3 monfooter" style="margin-top: 10px;">
@@ -389,18 +268,16 @@
 
     <!-- Bootstrap JS and dependencies -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<!--
+    
+    <!--
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script> -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script> 
+    -->
     
-
-     
-
-
 
     <script src="{% static 'javascript/etudiant.js' %}"></script>
 
@@ -490,5 +367,6 @@
 
     {% block scripts %}
     {% endblock %}
+
 </body>
 </html>

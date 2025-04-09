@@ -1,0 +1,219 @@
+{% extends "base2.html" %}
+{% load static %}
+{% load custom_filters %}
+
+{% block breadcrumb %}
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'accueil_responsable' %}">Accueil</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'emploi_de_temps' %}">Emplois de temps</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Modifier emploi de temps</li>
+    </ol>
+
+{% endblock breadcrumb %}
+
+{% block content %}
+
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #e0e0e0;
+            padding: 10px;
+            text-align: center;
+            max-width: 80px;
+        }
+        th {
+            background-color:rgb(235, 241, 250);
+        }
+        .matiere {
+            border-radius: 8px;
+            padding: 5px;
+            text-align: center;
+        }
+
+        .select_matiere {
+            max-width: 30px;
+            padding: 2px;
+        }
+    </style>
+
+
+    <h1 class="text-center text-2xl font-bold">Emploi de temps - <span id="classe" data-semestre="{{semestre}}" style="color:blue;">{{selected_classe}}</span></h1>
+
+    
+    <form method="POST" id="timetable-form" onsubmit="event.preventDefault();">
+    {% csrf_token %}
+    <br>
+    <label for="periode" id="periode_label" class="input-label me-2" style="font-weight:bold; font-size:20px; color:blue;">Période : </label>
+    <input name="periode" id="periode" class="col-md-4" value="{{selected_periode}}" style="text-align:center; font-weight:bold;" type="text" disabled>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Lundi</th>
+                <th>Mardi</th>
+                <th>Mercredi</th>
+                <th>Jeudi</th>
+                <th>Vendredi</th>
+                <th>Samedi</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ligne in "12345"|slice:":5" %}
+            
+                <tr id="ligne_{{ forloop.counter }}" class="lignes">
+                    {% for day in days  %}
+
+                        {% with key=day|add:"_"|add:ligne|stringformat:"s" %}
+                            {% with prog=programmations_dict|get_item:key %}
+                                <td id="{{ day }}" class="cell">
+
+                                    <select name="statut_{{ day }}" class="input-matiere">
+                                        <option value="" disabled {% if not prog %}selected{% endif %}>Choisir une matière</option>
+                                        {% for matiere in matieres %}
+                                            <option value="{{matiere}}" {% if matiere.enseignant %} enseignant="{{ matiere.enseignant }}" {% else %} enseignant="enseignant"  {% endif %}  {% if prog and matiere|stringformat:"s" == prog.matiere %}selected{% endif %}>{{matiere}}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <br>
+                                    <span class="enseignants" style="font-weight:bold;">{% if prog %}{{ prog.enseignant }}{% endif %}</span>
+                                    <br> <input name="horaire_{{ day }}" class="col-md-7" value="{% if prog %}{{ prog.horaire }}{% endif %}" style="text-align:center;" type="text">
+                                </td>
+                            {% endwith %}
+                        {% endwith %}
+
+                {% endfor %}
+                        
+            </tr>
+            {% endfor %}
+            
+        </tbody>
+    </table>
+    <!-- <pre>{{ programmations_dict|safe }}</pre> -->
+
+
+    <br><button class="btn btn-success" type="submit">Enregistrer</button>
+
+</form>
+
+<!-- jQuery pour executer les requêtes ajax -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+{% endblock content %}
+
+{% block scripts %}
+    <script>
+        document.querySelectorAll(".input-matiere").forEach((select) => {
+            select.addEventListener("change", function () {
+                // Trouver l'option sélectionnée
+                let selectedOption = this.options[this.selectedIndex];
+                
+                // Récupérer la valeur de l'attribut "enseignant"
+                let enseignantName = selectedOption.getAttribute("enseignant") || "Aucun enseignant";
+
+                // Trouver le <span> qui est juste après le <select>
+                let enseignantSpan = this.closest("td").querySelector(".enseignants");
+
+                // Mettre à jour le contenu du <span>
+                if (enseignantSpan) {
+                    enseignantSpan.textContent = enseignantName;
+                }
+            });
+        });
+
+        document.getElementById("timetable-form").addEventListener("submit", function (event) {
+            event.preventDefault();
+
+            var classe = document.getElementById("classe").textContent.trim();
+            var semestre = document.getElementById("classe").getAttribute("data-semestre");
+            var periode = document.getElementById("periode").value;
+
+            var matieresSelect = document.querySelectorAll(".input-matiere"); // les select des matières
+
+            if (classe && semestre && periode){
+                var Data = new FormData();
+
+                Data.append('classe', classe);
+                Data.append('semestre', semestre);
+                Data.append('periode', periode);
+
+                let emploi_de_temps = [];
+
+                matieresSelect.forEach((select) => {
+                    matiere = select.value;
+                    enseignant = select.closest("td").querySelector(".enseignants").textContent.trim(); //  nom de l'enseignant
+                    horaire = select.closest("td").querySelector(".col-md-7").value.trim(); // horaire du cours
+
+                    jour = select.closest("td").getAttribute("id"); // jour de la semaine
+                    numero_ligne = select.closest("td").closest("tr").getAttribute("id"); // numero de la ligne
+
+                    id_cours = jour + "_" + numero_ligne;
+
+                    let programmation = {
+                        'jour': jour,
+                        'numero_ligne': numero_ligne,
+                        'matiere': matiere,
+                        'enseignant': enseignant,
+                        'horaire': horaire
+                    };
+
+                    emploi_de_temps.push(programmation);
+                });
+
+                Data.append("emploi_de_temps", JSON.stringify(emploi_de_temps));
+                console.log(JSON.stringify(emploi_de_temps));
+
+                const loader = document.getElementById('loader');
+                loader.style.display = 'flex';  // Affiche le loader
+
+                fetch(`/responsable/emploi de temps/delete for modify/?classe=${classe}&periode=${periode}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`Erreur HTTP : ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(() => {
+                        $.ajax({
+                            url: '{% url "save_time_table" %}',
+                            type: 'POST',
+                            data: Data,
+                            processData: false,
+                            contentType: false,
+                            headers: {
+                                'X-CSRFToken': '{{ csrf_token }}'
+                            },
+                            success: function (response) {
+                                loader.style.display = 'none'; // cache le loader
+
+                                // setTimeout pour attendre que le loader soit bien caché avant d'afficher l'alerte et de rediriger
+                                setTimeout(function() {
+                                    // Affiche l'alerte
+                                    alert("L'emploi du temps a été modifié avec succès !");
+
+                                    // Redirige vers la page de visualisation des emplois de temps
+                                    window.location.href = "{% url 'emploi_de_temps' %}";
+                                }, 300); // 300 millisecondes pour laisser le temps à la page de se mettre à jour après avoir caché le loader
+                            },
+                            error: function (xhr, status, error) {
+                                loader.style.display = 'none'; // cache le loader
+                                console.error('Erreur lors de l\'enregistrement :', xhr.responseJSON ? xhr.responseJSON.error : error);
+                                alert("Une erreur est survenue lors de la modification.");
+                            }
+                        });
+                    })
+                    .catch(error => {
+                        loader.style.display = 'none'; // cache le loader
+                        console.error('Erreur lors de la suppression :', error);
+                        alert("Impossible de modifier l'emploi de temps. Veuillez réessayer.");
+                    });
+
+
+            };
+        });
+
+
+    </script>
+{% endblock scripts %}
+

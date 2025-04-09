@@ -26,6 +26,7 @@ urlpatterns = [
     path('filtrer-matieres/', views.filtrer_matieres, name='filtrer_matieres'),
     path('responsable/ajouter_notes/', views.ajouter_notes, name='ajouter_notes'),
     path('responsable/ajouter_matiere/',views.ajouter_matiere,name='ajouter_matiere'),
+    path('etudiant/accueil/', views.Accueil_etudiant, name='accueil_etudiant'),
     path('etudiant/mes_notes/', views.notes_etudiants, name='notes_etudiants'),
     path('etudiant/Messagerie/',views.mes_messages,name='mes_messages'),
     path('etudiant/Modifier_profil/',views.modifier_etudiant2,name='modifier_etudiant2'),
@@ -33,11 +34,14 @@ urlpatterns = [
     path('etudiant/delete_message/<int:message_id>/',views.delete_message, name='delete_message'),
     path('etudiant/ouvrir_fichier/<int:fichier_joint_id>/',views.ouvrir_fichier, name='ouvrir_fichier'),
     path('etudiant/enregistrer_fichier/<int:fichier_joint_id>/',views.enregistrer_fichier, name='enregistrer_fichier'),
+    path('etudiant/mon emploi de temps/', views.EtudiantTimeTable, name='mon_emploi_de_temps'),
+
     path('ajouter_responsable/', views.ajouter_responsable, name='ajouter_responsable'),
     path('responsable/modifier/',views.modifier_responsable,name='modifier_responsable'),
     path('responsable/liste_etudiants/', views.liste_etudiants, name='liste_etudiants'),
     path('responsable/accueil/',views.Accueil_responsable,name='accueil_responsable'),
     path('responsable/ajouter_etudiant/', views.ajouter_etudiant, name='ajouter_etudiant'),
+    path('responsable/ajouter_enseignant/', views.ajouter_enseignant, name='ajouter_enseignant'),
     path('responsable/charger_etudiants/', views.charger_etudiants, name='charger_etudiants'),
     path('responsable/ajouter_etudiants/', views.ajouter_etudiants, name='ajouter_etudiants'),
     path('responsable/charger_matieres/', views.charger_matieres, name='charger_matieres'),
@@ -60,6 +64,13 @@ urlpatterns = [
 
     path('responsable/base_intelligente/', views.interaction_page, name='interaction_page'),
     path('responsable/dashboard/', views.dashboard, name='dashboard'),
+    path('responsable/emploi de temps/', views.RespoTimeTable, name='emploi_de_temps'),
+    path('responsable/emploi de temps/nouveau/', views.MakeTimeTable, name='faire_emploi_de_temps'),
+    path('responsable/emploi de temps/nouveau/save', views.SaveTimeTable, name='save_time_table'),
+
+    path('responsable/emploi de temps/delete/<str:classe>/<str:periode>/', views.DeleteTimeTable, name='delete_time_table'),
+    path('responsable/emploi de temps/delete for modify/', views.DeleteTimeTableForModify, name='delete_time_table_for_modify'),
+    path('responsable/emploi de temps/edit/<str:classe>/<str:periode>/', views.EditTimeTable, name='edit_time_table'),
    
     
    

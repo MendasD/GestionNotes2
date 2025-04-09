@@ -1,0 +1,197 @@
+:root {
+    --primary: #3498db;
+    --secondary: #2c3e50;
+    --success: #2ecc71;
+    --danger: #e74c3c;
+    --warning: #f39c12;
+    --info: #1abc9c;
+    --light: #ecf0f1;
+    --dark: #34495e;
+}
+
+.offcanvas-link:hover {
+    color: rgb(116, 70, 15) !important;
+}
+.option-link {
+    padding: 3%;
+    margin-left: 3px;
+}
+
+.offcanvas-link:hover{
+    color: rgb(116, 70, 15) !important;
+}
+
+.badge {
+    background-color: green;  /* Couleur de fond */
+    color: white;  /* Couleur du texte */
+    padding: 5px 10px;  /* Espace intérieur pour rendre le badge circulaire */
+    border-radius: 50%;  /* Rendre le badge circulaire */
+    font-size: 10px;    
+}
+/*
+.monfooter{  
+    padding: 2px;
+    background-color: #f1f1f1; /* Couleur de fond du footer 
+    text-align: center;
+    padding: 10px 0;
+}
+*/
+.monfooter {
+    background-color: #f1f1f1; /* Couleur de fond du footer */
+    text-align: center;
+    padding: 10px 0;
+    margin-top: 10%;
+}
+
+/* Assure que le sidebar prend toute la hauteur de l'écran sans chevaucher la navbar */
+.sidebar {
+    width: 15%;
+    height: calc(100vh - 56px); /* Hauteur totale - hauteur de la navbar */
+    background-color: #343a40; /* Couleur du sidebar */
+    color: white;
+    position: fixed; /* Fixe le sidebar sur le côté gauche */
+    top: 56px; /* Décale le sidebar sous la navbar */
+    left: 0;
+    padding-top: 20px;
+    background: var(--secondary);
+    min-height: calc(100vh-100px);
+    transition: all 0.3s;
+}
+
+.sidebar-header {
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.sidebar-menu {
+    padding: 0;
+    list-style: none;
+}
+
+.sidebar-menu a {
+    padding: 15px 20px;
+    transition: all 0.3s;
+    color: white;
+    
+    display: block;
+    text-decoration: none;
+}
+
+.sidebar-menu a:hover {
+    background: rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+}
+
+.sidebar-menu a.active {
+    background: var(--primary);
+}
+
+.sidebar-menu a a {
+    color: white;
+    text-decoration: none;
+}
+
+.sidebar-menu a i {
+    margin-right: 10px;
+}
+
+.content {
+    margin-left: 15%; /* Décale le contenu principal pour ne pas être recouvert par le sidebar */
+    padding: 20px 20px;
+    padding-top: 20px; /* Ajoute un espace pour ne pas chevaucher la navbar */
+    transition: margin-left 0.3s ease-in-out;
+    max-width: 80%; /* Évite le débordement */
+    overflow-x: hidden; /* Cache le débordement horizontal */
+    box-sizing: border-box; /* Prévient le dépassement dû au padding */
+}
+
+/* Cacher le sidebar sur petits écrans */
+@media (max-width: 992px) {
+    .sidebar {
+        transform: translateX(-100%);
+    }
+    .content {
+        margin-left: 0;
+        padding: 15px;
+    }
+}
+
+/* Ajouter classe pour afficher le sidebar */
+.sidebar.active {
+    transform: translateX(0);
+    background: var(--primary);
+}
+
+.sidebar.deactive {
+    transform: translateX(0);
+    display: none;
+    
+}
+
+.content.shifted {
+    margin-left: 15%;
+}
+.content.reshifted {
+    margin-left: 0px;
+    max-width: 100%;
+}
+
+/* Style de la hiérarchie des pages */
+.breadcrumb {
+    background: #f8f9fa;
+    padding: 10px 15px;
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+.breadcrumb a {
+    text-decoration: none;
+    color: #007bff;
+}
+
+.breadcrumb a:hover {
+    text-decoration: underline;
+}
+
+/* Style pour le loader */
+#loader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.85);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.spinner {
+    border: 6px solid #f3f3f3;
+    border-top: 6px solid #3498db;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+    margin-bottom: 10px;
+}
+
+.loader-text {
+    font-weight: bold;
+    text-align: center;
+    font-size: 18px;
+    animation: blink 1.5s infinite;
+    color: #333;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}

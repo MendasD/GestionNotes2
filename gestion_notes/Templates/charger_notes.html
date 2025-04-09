@@ -1,5 +1,13 @@
 {% extends "base2.html" %}
 
+{% block breadcrumb %}
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'accueil_responsable' %}">Accueil</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Ajouter un fichier de notes</li>
+    </ol>
+
+{% endblock breadcrumb %}
+
 {% block content %}
 
 <h2 class="mb-4">Ajouter un nouveau fichier de notes</h2>

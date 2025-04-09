@@ -5,6 +5,14 @@
     <link rel="stylesheet" href="{% static 'css/etudiant.css' %}">
 {% endblock extra_styles %}
 
+{% block breadcrumb %}
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'accueil_etudiant' %}">Accueil</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Mes notes</li>
+    </ol>
+
+{% endblock breadcrumb %}
+
 {% block content %}
 <style>
    /* Styles spécifiques pour le mode sombre */

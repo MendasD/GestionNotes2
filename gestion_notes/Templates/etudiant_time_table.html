@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block breadcrumb %}
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'accueil_etudiant' %}">Accueil</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Emploi de temps</li>
+    </ol>
+
+{% endblock breadcrumb %}
+
+{% block content %}
+
+     <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #e0e0e0;
+            padding: 10px;
+            text-align: center;
+            max-width: 80px;
+        }
+        th {
+            background-color:rgb(235, 241, 250);
+        }
+        .matiere {
+            border-radius: 8px;
+            padding: 5px;
+            text-align: center;
+        }
+
+        .select_matiere {
+            max-width: 30px;
+            padding: 2px;
+        }
+    </style>
+
+
+
+    <h1 class="text-center text-2xl font-bold">Emploi de Temps - <span style="color:blue;">{{selected_classe}}</span></h1><br>
+
+    <div style="display: flex; justify-content: center; align-items: center; height: 70px;">
+        <span style="font-weight:bold; font-size:20px; color:blue; align:center;">{{selected_periode}}</span>
+    </div>
+
+    <form id="search-form" class="form" method='get'>
+    {% csrf_token %}
+        <div class="row">
+            <input name="numero_emploi" class="col-md-1 me-2" value="No_ {{ numero_emploi }}" type="text" disabled>
+            
+            <select name="periode" id="choix-periode" class="col-md-3 search-input me-2" onchange="Select_function()">
+                <option value="" disabled selected>Choisir un periode</option>
+                {% for periode in periodes %}
+                    <option value="{{periode}}" {% if periode == selected_periode %}selected{% endif %}>{{periode}}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </form>
+
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Lundi</th>
+                <th>Mardi</th>
+                <th>Mercredi</th>
+                <th>Jeudi</th>
+                <th>Vendredi</th>
+                <th>Samedi</th>
+            </tr>
+        </thead>
+        <tbody>
+
+            {% for ligne in "12345"|slice:":5" %}
+            
+                <tr id="ligne_{{ forloop.counter }}" class="lignes">
+                    {% for day in days  %}
+           
+                        <td id="{{ day }}" class="cell"> 
+                            {% for programmation in programmations %}
+                                {% if programmation.jour|stringformat:"s" == day and programmation.numero|stringformat:"s" == ligne %}
+                                    {{programmation.matiere}} <br> 
+                                    <span class="enseignants" style="font-weight:bold;">{{programmation.matiere.enseignant}}</span><br> 
+                                    <span> {{programmation.horaire}} </span>
+                                
+                                {% endif %}
+                            {% endfor %}
+                        </td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+           
+        </tbody>
+    </table>
+
+{% endblock content %}
+
+{% block scripts %}
+
+    <script>
+        function Select_function(){
+            // Envoyer les données seulement si la classe et le semestre sont spécifiés
+            let form = document.getElementById("search-form");
+            let periode_form = document.getElementById("choix-periode").value;
+
+            if (periode_form){
+                console.log(periode_form);
+                form.submit();
+            }else {
+                alert("Vous devez renseigner la période !!!");
+            }
+        }
+
+    </script>
+
+{% endblock scripts %}

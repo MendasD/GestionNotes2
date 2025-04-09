@@ -16,6 +16,7 @@ def Login(request):
 
         if Etudiant.objects.filter(matricule=matricule).exists():
             etudiant = Etudiant.objects.get(matricule=matricule)
+            
             if etudiant.check_password(password):
                 
                 request.session['user_pk'] = etudiant.pk
@@ -23,12 +24,14 @@ def Login(request):
                 nb_messages_non_lus = Message.objects.filter(etudiant=etudiant).filter(lu=False).count()
                 messages.success(request, f'Bienvenue {etudiant.name}')
                 
-                return redirect('notes_etudiants')
+                return redirect('accueil_etudiant')
                 
             else:
                 error_message = "Mot de passe incorrect"
                 return render(request, 'connexion.html', {'error_message': error_message})
+            
         elif Responsable.objects.filter(email=matricule).exists():
+
             responsable = Responsable.objects.get(email=matricule)
             if responsable.check_password(password):
                 

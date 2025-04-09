@@ -3,8 +3,8 @@ from django.http import HttpResponse, Http404, FileResponse
 from urllib.parse import quote  
 from django.contrib import messages
 import pandas as pd
-from connexion.models import Etudiant, Note, Matiere, Classe, Responsable, Message, FichiersJoints, Moyenne
-from .forms import NoteUploadForm, MatiereForm, ResponsableForm, EtudiantForm, ClasseForm, EtudiantUpdateForm, OneMessageForm, EtudiantUpdatePasswordForm
+from connexion.models import Etudiant, Note, Matiere, Classe, Responsable, Message, FichiersJoints, Moyenne, Enseignants, EmploiDuTemps, Programmation_cours
+from .forms import NoteUploadForm, MatiereForm, ResponsableForm, EtudiantForm, ClasseForm, EtudiantUpdateForm, OneMessageForm, EtudiantUpdatePasswordForm, EnseignantForm
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from collections import defaultdict
@@ -18,6 +18,15 @@ from openpyxl import Workbook
 import io
 import xlwings as xw
 from tempfile import NamedTemporaryFile
+import numpy as np
+from django.db.models import Avg, Count
+from django.utils import timezone, timesince
+from datetime import timedelta
+import matplotlib.pyplot as plt
+from io import BytesIO
+import base64
+import plotly.graph_objs as go # pour les graphiques interactifs
+import plotly.offline as opy
 
 
 
@@ -554,6 +563,7 @@ def notes_etudiants(request):
     })
 
 
+@is_login
 def ajouter_responsable(request):
     if request.method == 'POST':
         form = ResponsableForm(request.POST)
@@ -762,6 +772,18 @@ def Accueil_responsable(request):
     last_login = responsable.last_login
     last_activity = request.session.get('last_activity')
     return render(request, 'responsable.html',{'classes':classes,'last_login':last_login,'last_activity':last_activity,'theme':theme,'username':username})
+
+@is_login
+def Accueil_etudiant(request):
+    theme = request.session['theme'] if 'theme' in request.session else ''
+    etudiant = Etudiant.objects.get(pk = request.session['user_pk'])
+    username = etudiant.name or ""
+    nb_messages_non_lus = Message.objects.filter(etudiant=etudiant, lu=False).count()
+
+    last_login = etudiant.last_login
+    last_activity = request.session.get('last_activity')
+    return render(request, 'etudiant.html',{'last_login':last_login,'last_activity':last_activity,'theme':theme,'username':username,'nb_message':nb_messages_non_lus})
+
 
 @is_login
 def ajouter_etudiant(request):
@@ -1054,7 +1076,7 @@ def modifier_etudiant2(request):
             form.save()
             request.session['last_activity'] = {'name':'modifier_profil','time':timezone.now().isoformat()}
             messages.success(request, f'Vos informations ont été modifié avec succès')
-            return redirect('accueil_etudiant')
+            return redirect('notes_etudiants')
         else:
             messages.error(request, form.errors)
             return render(request, 'modifier_etudiant.html', {'form': form})
@@ -1639,22 +1661,484 @@ def interaction_page(request):
     return render(request, 'modele.html', {'results': results})
 
 
-from django.db.models import Avg, Count
-from django.utils import timezone, timesince
-from datetime import timedelta
 @is_login
 def dashboard(request):
+
+    try:
+        responsable = Responsable.objects.get(pk=request.session['user_pk'])
+        classes = responsable.get_classes_by_filiere()
+    except Responsable.DoesNotExist:
+        classes = Classe.objects.all()
+        messages.error(request, 'Accès non autorisé !!!')
+    
+    enseignants = Enseignants.objects.count()
+
+    moyennes_etudiants = []
+    for etudiant in Etudiant.objects.all():
+        moyenne_etudiant = Note.objects.filter(etudiant=etudiant,annee_scolaire=etudiant.annee_scolaire_en_cours).aggregate(Avg('note'))['note__avg'] or 0
+        moyennes_etudiants.append({
+            'name':etudiant.name,
+            'classe':etudiant.classe.name,
+            'moyenne':moyenne_etudiant
+        })
+    
+    
+
+    # Filtrer par ordre décroissant de la moyenne
+    moyennes_etudiants.sort(key=lambda x: x['moyenne'], reverse=True)
+
+    def construction_histogramme_moyenne(moyennes_etudiants):
+        """
+        # Création de l'histogramme
+        plt.figure(figsize=(8, 6))
+        plt.hist([moyenne_etudiant['moyenne'] for moyenne_etudiant in moyennes_etudiants], bins=5, edgecolor='black')
+        plt.title('Histogramme des moyennes')
+        plt.xlabel('Moyenne')
+        plt.ylabel('Nombre d\' étudiants ')
+
+        # Sauvegarde dans un buffer mémoire
+        buffer = BytesIO()
+        plt.savefig(buffer, format='png')
+        buffer.seek(0)
+        image_png = buffer.getvalue()
+        buffer.close()
+        plt.close()  # Fermer la figure après génération
+
+        histogram_base64 = base64.b64encode(image_png).decode('utf-8')
+        """
+
+        # Création de l'histogramme interactif
+        moyennes = [moyenne_etudiant['moyenne'] for moyenne_etudiant in moyennes_etudiants]
+        trace = go.Histogram(x=moyennes, nbinsx=8, marker=dict(color='rgb(0,123,255)'))
+        layout = go.Layout(title='Histogramme des Moyennes',
+                        xaxis=dict(title='Moyenne'),
+                        yaxis=dict(title='Nombre d\'étudiants'))
+
+        fig = go.Figure(data=[trace], layout=layout)
+
+        # Génère le HTML du graphique
+        graph_div = opy.plot(fig, auto_open=False, output_type='div')
+
+        return graph_div
+    
+    # compter le nombre d'étudiants avec une moyenne inférieure à 12
+    def Compter_moyennes_inf_12(moyennes_etudiants):
+        moyennes_inf_12 = [moyenne_etudiant['moyenne'] for moyenne_etudiant in moyennes_etudiants if moyenne_etudiant['moyenne'] < 12]
+        return len(moyennes_inf_12)
+
+
+
+    if request.method == "GET":
+        classe_name = request.GET.get('classe')
+        semestre = request.GET.get('semestre')
+
+        if classe_name:
+            classe = Classe.objects.get(name=classe_name)
+            etudiants_classe = Etudiant.objects.filter(classe=classe).count()
+            etudiants_filles = Etudiant.objects.filter(classe=classe, sexe="F").count()
+            etudiants_garcons = Etudiant.objects.filter(classe=classe, sexe="M").count()
+            moyenne = Note.objects.filter(classe=classe).aggregate(Avg('note'))['note__avg'] or 0
+
+            moyennes_etudiants = [] # vider la liste
+            for etudiant in Etudiant.objects.filter(classe=classe):
+                moyenne_etudiant = Note.objects.filter(etudiant=etudiant,annee_scolaire=etudiant.annee_scolaire_en_cours).aggregate(Avg('note'))['note__avg'] or 0
+                moyennes_etudiants.append({
+                    'name':etudiant.name,
+                    'classe':etudiant.classe.name,
+                    'moyenne':moyenne_etudiant
+                })
+
+
+            if semestre:
+                moyennes_etudiants = [] # vider la liste
+                moyenne = Note.objects.filter(classe=classe, semestre=semestre).aggregate(Avg('note'))['note__avg'] or 0
+                for etudiant in Etudiant.objects.filter(classe=classe):
+                    moyenne_etudiant = Note.objects.filter(etudiant=etudiant,semestre=semestre,annee_scolaire=etudiant.annee_scolaire_en_cours).aggregate(Avg('note'))['note__avg'] or 0
+                    moyennes_etudiants.append({
+                        'name':etudiant.name,
+                        'classe':etudiant.classe.name,
+                        'moyenne':moyenne_etudiant
+                    })
+            
+
+            # Filtrer par ordre décroissant de la moyenne
+            moyennes_etudiants.sort(key=lambda x: x['moyenne'], reverse=True)
+
+           
+            # Statistiques moyennes
+            statistiques_moyennes = {
+                "moyenne": np.mean([moyenne_etudiant['moyenne'] for moyenne_etudiant in moyennes_etudiants]),
+                "min": np.min([moyenne_etudiant['moyenne'] for moyenne_etudiant in moyennes_etudiants]) if len(moyennes_etudiants)>0 else None,
+                "max": np.max([moyenne_etudiant['moyenne'] for moyenne_etudiant in moyennes_etudiants]) if len(moyennes_etudiants)>0 else None,
+                "median": np.median([moyenne_etudiant['moyenne'] for moyenne_etudiant in moyennes_etudiants]) if len(moyennes_etudiants)>0 else None,
+                "sd": np.std([moyenne_etudiant['moyenne'] for moyenne_etudiant in moyennes_etudiants]) if len(moyennes_etudiants)>0 else None,
+                "histogram": construction_histogramme_moyenne(moyennes_etudiants),
+                
+            }
+
+            return render(request, 'dashboard.html', {'classes': classes, 
+                                                      'selected_classe': classe_name, 
+                                                      'etudiants_classe': etudiants_classe,
+                                                      'eleves_count': etudiants_classe,
+                                                      'girls_count': etudiants_filles,
+                                                      'boys_count': etudiants_garcons,
+                                                      'moyenne_generale':moyenne,
+                                                      'selected_semestre':semestre,
+                                                      'enseignants':enseignants,
+                                                      'meilleures_performances':moyennes_etudiants[:5],
+                                                      'stats_moyennes': statistiques_moyennes,
+                                                      'moyennes_inf_12': Compter_moyennes_inf_12(moyennes_etudiants),
+                                                      })
+    
+    # statistiques moyennes concernant toute l'école
+    statistiques_moyennes = {
+        "moyenne": np.mean([moyenne_etudiant['moyenne'] for moyenne_etudiant in moyennes_etudiants]),
+        "min": np.min([moyenne_etudiant['moyenne'] for moyenne_etudiant in moyennes_etudiants]) if len(moyennes_etudiants)>0 else None,
+        "max": np.max([moyenne_etudiant['moyenne'] for moyenne_etudiant in moyennes_etudiants]) if len(moyennes_etudiants)>0 else None,
+        "median": np.median([moyenne_etudiant['moyenne'] for moyenne_etudiant in moyennes_etudiants]) if len(moyennes_etudiants)>0 else None,
+        "sd": np.std([moyenne_etudiant['moyenne'] for moyenne_etudiant in moyennes_etudiants]) if len(moyennes_etudiants)>0 else None,
+        "histogram": construction_histogramme_moyenne(moyennes_etudiants),
+    }
+    
     context = {
         'eleves_count': Etudiant.objects.count(),
         'girls_count': Etudiant.objects.filter(sexe="F").count(),
-        'moyenne_generale': Note.objects.aggregate(Avg('note'))['note__avg'] or 0,
+        'boys_count': Etudiant.objects.filter(sexe="M").count(),
+        'moyenne_generale': np.mean([moyenne_etudiant['moyenne'] for moyenne_etudiant in moyennes_etudiants]),
         'nouvelles_notes': Note.objects.filter(created_at__gte=timezone.now()-timedelta(days=7)).count(),
-        'recent_notes': Note.objects.order_by('-created_at')[:5]
+        'recent_notes': Note.objects.order_by('-created_at')[:5],
+        'classes':classes,
+        'enseignants':enseignants,
+        'meilleures_performances':moyennes_etudiants[:5],
+        'stats_moyennes': statistiques_moyennes,
+        'moyennes_inf_12': Compter_moyennes_inf_12(moyennes_etudiants),
     }
     return render(request, 'dashboard.html', context)
 
+@is_login
+def RespoTimeTable(request):
+    if request.method == "GET":
+        days = ["lundi","mardi","mercredi","jeudi","vendredi","samedi"]
+        try:
+            responsable = Responsable.objects.get(pk=request.session['user_pk'])
+            classes = responsable.get_classes_by_filiere()
+  
+            selected_classe = request.GET.get('classe')
+            selected_periode = request.GET.get('periode')
+
+            # informations sur les emplois de temps
+            def get_emploi_data(classe_name, periode=None):
+                try:
+                    classe = Classe.objects.get(name=classe_name)
+                    emplois = EmploiDuTemps.objects.filter(classe=classe).order_by('-created_at')
+                    periodes = [emploi.periode for emploi in emplois]
+                    if periode:
+                        emploi = EmploiDuTemps.objects.filter(classe=classe, periode=periode).order_by('-created_at').first()
+                        return emploi, periodes, emplois
+                    return [], periodes, emplois
+                except (Classe.DoesNotExist, EmploiDuTemps.DoesNotExist):
+                    return None, None, None
+
+            # classe et periode fournies
+            if selected_classe and selected_periode:
+                emploi, periodes, emplois = get_emploi_data(selected_classe, selected_periode)
+                if emploi:
+                    programmations = emploi.programmation_cours.all()
+                    
+                    print(programmations)
+                    return render(request, 'time_table.html', {
+                        "classes": classes,
+                        "periodes": periodes,
+                        "selected_classe": selected_classe,
+                        "emploi_de_temps": emploi,
+                        "selected_periode": selected_periode,
+                        "programmations": programmations,
+                        "numero_emploi": len(emplois),
+                        "days": days
+                    })
+                else:
+                    messages.error(request, "Aucun emploi du temps trouvé pour cette classe et cette période.")
+                    return render(request, 'time_table.html', {
+                        "classes": classes,
+                        "selected_classe":selected_classe,
+                        "selected_periode":selected_periode,
+                        "days":days
+                        })
+            
+            # classe fournie sans periode
+            elif selected_classe:
+                _, periodes, emplois = get_emploi_data(selected_classe)
+                if emplois:
+                    return render(request, 'time_table.html', {
+                        "classes": classes,
+                        "periodes": periodes,
+                        "selected_classe": selected_classe,
+                        "numero_emploi": len(emplois),
+                        "days":days
+                    })
+                else:
+                    messages.error(request, "Aucune classe trouvée pour ce label.")
+                    return render(request, 'time_table.html', {
+                        "classes": classes,
+                        "selected_classe":selected_classe,
+                        "days":days
+                        })
+        
+        except Responsable.DoesNotExist:
+            classes = Classe.objects.none()
+            messages.error(request, "Vous n'êtes pas autorisé à accéder à cette page.")
+            return render(request, 'time_table.html', {"classes": classes})
+
+    # si la requete n'est pas GET
+    return render(request, 'time_table.html', {"classes": classes,"days":days})
+
+   
+@is_login
+def MakeTimeTable(request):
+    days = ["lundi","mardi","mercredi","jeudi","vendredi","samedi"]
+    
+    try: 
+        responsable = Responsable.objects.get(pk=request.session['user_pk'])
+        classes = responsable.get_classes_by_filiere()
+    except Responsable.DoesNotExist:
+        classes = Classe.objects.none()
+        messages.error(request, "Vous n'êtes pas autorisé à accéder à cette page.")
+
+    if request.method == "GET":
+        selected_classe = request.GET.get('classe') if request.GET.get('classe') else None
+        selected_semester = request.GET.get('semestre') if request.GET.get('semestre') else None
+        if selected_classe and selected_semester:
+            try:
+                nb_emploi =  EmploiDuTemps.objects.filter(classe__name=selected_classe, semestre=selected_semester).count() if EmploiDuTemps.objects.filter(classe__name=selected_classe, semestre=selected_semester).exists() else 0
+                numero_emploi = nb_emploi + 1
+                classe = Classe.objects.get(name=selected_classe)
+                matieres = Matiere.objects.filter(classe=classe, semestre=selected_semester)
+                return render(request, 'make_time_table.html',{"days":days,"numero_emploi":numero_emploi,"classes":classes,"matieres":matieres,"selected_classe":selected_classe,"selected_semestre":selected_semester})
+            except Matiere.DoesNotExist:
+                matieres = Matiere.objects.none()
+                messages.error(request, "Aucune matière trouvée pour cette classe et ce semestre.")
+                return render(request, 'make_time_table.html',{"days":days,"classes":classes})
+        else:
+            matieres = Matiere.objects.none()
+            messages.error(request, "Veuillez sélectionner une classe et un semestre.")
+            return render(request, 'make_time_table.html',{"days":days,"classes":classes})
+    else:
+
+        return render(request, 'make_time_table.html',{"days":days,"classes":classes})
+    
+@is_login
+def SaveTimeTable(request):
+    if request.method == "POST":
+        data = request.POST # pour les données envoyées par le formulaire
+        classe_name = data.get('classe',"")
+        semestre = data.get('semestre', "")
+        periode = data.get('periode', "").strip()
+        emploi_json = data.get('emploi_de_temps', "[]") # recupère la chaîne json
+
+        try:
+            emploi_de_temps = json.loads(emploi_json) # Transforme en liste python
+        except json.JSONDecodeError:
+            emploi_de_temps = []
+
+        if emploi_de_temps:
+            print(emploi_de_temps[0])
+            try:
+                classe = Classe.objects.get(name=classe_name)
+                time_table = EmploiDuTemps.objects.create(classe=classe, semestre=semestre, periode=periode) # On crée un nouvel emploi de temps
+                time_table.save()
+
+                for programmation in emploi_de_temps:
+                    jour = programmation.get("jour", "").strip()
+                    numero_ligne = programmation.get("numero_ligne", "").strip()
+                    matiere_name = programmation.get("matiere", "").strip()
+                    enseignant = programmation.get("enseignant", "").strip()
+                    horaire = programmation.get("horaire", "").strip() 
+                  
+                    if numero_ligne:
+                        try:
+                            numero_jour = int(numero_ligne.split("_")[1])
+                        except (IndexError, ValueError):
+                            numero_jour = None
+                    else:
+                        numero_jour = None
+                    
+                        
+                    if matiere_name:
+                        matiere = Matiere.objects.get(name=matiere_name)
+
+                        # Création du programme
+                        programme = Programmation_cours.objects.create(matiere=matiere, horaire=horaire, jour=jour, numero = numero_jour, emploi_du_temps = time_table)
+                        programme.save()
+                        print(f"programme enregistré avec matiere {matiere}")
+                                    
+                    else:
+                        continue
+                    
+                print("Emploi de temps sauvegardé")
+                return JsonResponse({"success": "Emploi de temps sauvegardé"})
+
+            except Exception as e:
+                print(e)
+                return JsonResponse({"error": "Erreur lors de l'enregistrement de l'emploi de temps"})
+
+        else:
+            print("Aucun emploi de temps trouvé")
+        return JsonResponse({"error": "Aucun emploi de temps envoyé"})
+    
+@is_login
+def DeleteTimeTable(request, classe, periode):
+    if request.method == "POST":
+       classe_name = classe
+       periode_name = periode
+       try:
+           classe = Classe.objects.get(name=classe_name)
+           emploi = EmploiDuTemps.objects.get(classe=classe, periode=periode_name)
+           emploi.delete()
+           messages.success(request, "Emploi de temps supprimé avec succès")
+           return redirect('emploi_de_temps')
+       except EmploiDuTemps.DoesNotExist:
+            messages.error(request, "Emploi de temps non trouvé")
+            return redirect('emploi_de_temps')
+
+def DeleteTimeTableForModify(request):
+    classe_name = request.GET.get('classe')
+    periode_name = request.GET.get('periode')
+    try:
+        classe = Classe.objects.get(name=classe_name)
+        emploi = EmploiDuTemps.objects.get(classe=classe, periode=periode_name)
+        emploi.delete()
+       
+        return JsonResponse(data=["ok"], safe=False)
+    except EmploiDuTemps.DoesNotExist:
+        messages.error(request, "Emploi de temps non trouvé")
+        return JsonResponse(data=["error"], safe=False)
+       
+@is_login
+def EditTimeTable(request, classe, periode):
+    days = ["lundi","mardi","mercredi","jeudi","vendredi","samedi"]
+
+    # Vérification de l'authentification
+    try:
+        responsable = Responsable.objects.get(pk=request.session['user_pk'])
+        classes = responsable.get_classes_by_filiere()
+    except Responsable.DoesNotExist:
+        classes = Classe.objects.none()
+        messages.error(request, "Vous n'êtes pas autorisé à accéder à cette page.")
+
+    # Traitement de la méthode GET
+    if request.method == "GET":
+        selected_classe = classe
+        selected_periode = periode
+        try:
+            classe = Classe.objects.get(name=selected_classe)
+            emploi = EmploiDuTemps.objects.get(classe=classe, periode=selected_periode)
+            programmations = emploi.programmation_cours.all()
+            programmations_dict = {}
+            for prog in programmations:
+                print(prog)
+                programmations_dict[f"{prog.jour}_{prog.numero}"] = {
+                    "matiere": str(prog.matiere.name),
+                    "enseignant": str(prog.matiere.enseignant),
+                    "horaire": prog.horaire
+                }
+            semestre = emploi.semestre
+            matieres = Matiere.objects.filter(classe=classe, semestre=semestre)
+            return render(request, 'edit_time_table.html', {"days":days, "classes":classes, "matieres":matieres, "selected_classe":selected_classe, "selected_periode":selected_periode, "programmations":programmations, "emploi":emploi,"programmations_dict":programmations_dict,"semestre":semestre})
+        except EmploiDuTemps.DoesNotExist:
+            messages.error(request, "Emploi de temps non trouvé")
+            return redirect('emploi_de_temps')
 
 
+@is_login
+def EtudiantTimeTable(request):
+    if request.method == "GET":
+        days = ["lundi","mardi","mercredi","jeudi","vendredi","samedi"]
+        try:
+            etudiant = Etudiant.objects.get(pk=request.session['user_pk'])
+            nb_messages_non_lus = Message.objects.filter(etudiant=etudiant, lu=False).count()
+  
+            selected_classe = etudiant.classe
+            selected_periode = request.GET.get('periode')
+
+            # informations sur les emplois de temps
+            def get_emploi_data(classe_name, periode=None):
+                try:
+                    classe = Classe.objects.get(name=classe_name)
+                    emplois = EmploiDuTemps.objects.filter(classe=classe).order_by('-created_at')
+                    periodes = [emploi.periode for emploi in emplois]
+                    if periode:
+                        emploi = EmploiDuTemps.objects.filter(classe=classe, periode=periode).order_by('-created_at').first()
+                        return emploi, periodes, emplois
+                    return [], periodes, emplois
+                except (Classe.DoesNotExist, EmploiDuTemps.DoesNotExist):
+                    return None, None, None
+
+            # classe et periode fournies
+            if selected_classe and selected_periode:
+                emploi, periodes, emplois = get_emploi_data(selected_classe, selected_periode)
+                if emploi:
+                    programmations = emploi.programmation_cours.all()
+                    
+                    print(programmations)
+                    return render(request, 'etudiant_time_table.html', {
+                        "periodes": periodes,
+                        "selected_classe": selected_classe,
+                        "emploi_de_temps": emploi,
+                        "selected_periode": selected_periode,
+                        "programmations": programmations,
+                        "numero_emploi": len(emplois),
+                        "days": days,
+                        "nb_message":nb_messages_non_lus
+                    })
+                else:
+                    messages.error(request, "Aucun emploi du temps trouvé pour cette classe et cette période.")
+                    return render(request, 'etudiant_time_table.html', {
+                        "selected_classe":selected_classe,
+                        "selected_periode":selected_periode,
+                        "days":days,
+                        "nb_message":nb_messages_non_lus
+                        })
+            
+            # classe fournie sans periode
+            elif selected_classe:
+                _, periodes, emplois = get_emploi_data(selected_classe)
+                if emplois:
+                    return render(request, 'etudiant_time_table.html', {
+                        "periodes": periodes,
+                        "selected_classe": selected_classe,
+                        "numero_emploi": len(emplois),
+                        "days":days,
+                        "nb_message":nb_messages_non_lus
+                    })
+                else:
+                    messages.error(request, "Aucune classe trouvée pour ce label.")
+                    return render(request, 'etudiant_time_table.html', {
+                        "selected_classe":selected_classe,
+                        "days":days,
+                        "nb_message":nb_messages_non_lus
+                        })
+        
+        except Etudiant.DoesNotExist:
+            messages.error(request, "Vous n'êtes pas autorisé à accéder à cette page.")
+            return redirect("connexion")
+
+    # si la requete n'est pas GET
+    return render(request, 'etudiant_time_table.html', {"classes": classes,"days":days,"nb_message":nb_messages_non_lus})
+
+
+@is_login
+def ajouter_enseignant(request):
+    if request.method == 'POST':
+        form = EnseignantForm(request.POST)
+        theme = request.session['theme'] if 'theme' in request.session else ''
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Enseignant ajouté avec succès')
+            return render(request, 'ajouter_enseignant.html', {'form': EnseignantForm(),'theme':theme})
+    else:
+        form = EnseignantForm()
+        theme = request.session['theme'] if 'theme' in request.session else ''
+    return render(request, 'ajouter_enseignant.html', {'form': form,'theme':theme})
             
 
     

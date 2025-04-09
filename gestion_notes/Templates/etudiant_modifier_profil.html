@@ -1,6 +1,14 @@
 {% extends "base.html" %}
 {% load static %}
 
+{% block breadcrumb %}
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'accueil_etudiant' %}">Accueil</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Mon profil</li>
+    </ol>
+
+{% endblock breadcrumb %}
+
 {% block content %}
     <h2 class="mb-4">Modifier mes informations</h2>
 

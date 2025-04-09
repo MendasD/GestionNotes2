@@ -1,0 +1,216 @@
+{% extends "base2.html" %}
+{% load static %}
+
+{% block breadcrumb %}
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'accueil_responsable' %}">Accueil</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Nouvel emploi de temps</li>
+    </ol>
+
+{% endblock breadcrumb %}
+
+{% block content %}
+
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #e0e0e0;
+            padding: 10px;
+            text-align: center;
+            max-width: 80px;
+        }
+        th {
+            background-color:rgb(235, 241, 250);
+        }
+        .matiere {
+            border-radius: 8px;
+            padding: 5px;
+            text-align: center;
+        }
+
+        .select_matiere {
+            max-width: 30px;
+            padding: 2px;
+        }
+    </style>
+
+
+    <h1 class="text-center text-2xl font-bold">Nouvel emploi de temps</h1>
+
+    <form id="search-form" class="form" method='get'>
+        <div class="row">
+            <input name="numero_emploi" class="col-md-1 me-2" value="No_ {{ numero_emploi }}" type="text" disabled>
+
+            <select name="classe" id="choix-classe" class="col-md-3 search-input me-2" onchange="Select_function()">
+                <option value="" disabled selected>Choisir une classe</option>
+                {% for classe in classes %}
+                    <option value="{{classe}}" {% if classe == selected_classe %}selected{% endif %}>{{classe}}</option>
+                {% endfor %}
+            </select>
+            
+            <select name="semestre" id="choix-semestre" class="col-md-3 search-input me-2" onchange="Select_function()">
+                <option value="" disabled selected>Choisir un semestre</option>
+                <option value="semestre1" {% if selected_semestre == 'semestre1' %}selected{% endif %}>Semestre 1</option>
+                <option value="semestre2" {% if selected_semestre == 'semestre2' %}selected{% endif %}>Semestre 2</option>
+                
+            </select>
+        </div>
+      
+        <a href="{% url 'faire_emploi_de_temps' %}" class="btn btn-primary btn-sm float-end"> Effacer</a>
+    </form>
+    
+    <form method="POST" id="timetable-form" action="{% url 'save_time_table' %}" onsubmit="event.preventDefault();">
+    {% csrf_token %}
+    <br>
+    <label for="periode" id="periode_label" class="input-label me-2" style="font-weight:bold; font-size:20px; color:blue;">Période : </label>
+    <input name="periode" id="periode" class="col-md-4" value="" style="text-align:center; font-weight:bold;" type="text" placeholder="ex: lundi 07 avril 2025 - samedi 12 avril 2025">
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Lundi</th>
+                <th>Mardi</th>
+                <th>Mercredi</th>
+                <th>Jeudi</th>
+                <th>Vendredi</th>
+                <th>Samedi</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for _ in "12345"|slice:":5" %}
+            
+                <tr id="ligne_{{ forloop.counter }}" class="lignes">
+                    {% for day in days  %}
+
+                        <td id="{{ day }}" class="cell">
+                        <select name="statut_{{ day }}" class="input-matiere">
+                            <option class="select_matiere" value="" disabled selected>Choisir une matière</option>
+                            {% for matiere in matieres %}
+                                <option value="{{matiere}}" {% if matiere.enseignant %} enseignant="{{ matiere.enseignant }}" {% else %} enseignant="enseignant"  {% endif %} {% if matiere == selected_matiere %}selected{% endif %}>{{matiere}}</option>
+                            {% endfor %}
+                        </select>
+                        <br>
+                        <span class="enseignants" style="font-weight:bold;"></span>
+                        <br> <input name="horaire_{{ day }}" class="col-md-7" value="" style="text-align:center;" type="text" placeholder="8h-10h">
+                    </td>
+                    
+                    {% endfor %}
+                        
+            </tr>
+            {% endfor %}
+            
+        </tbody>
+    </table>
+
+    <br><button class="btn btn-success" type="submit">Enregistrer</button>
+
+</form>
+
+<!-- jQuery pour executer les requêtes ajax -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+{% endblock content %}
+
+{% block scripts %}
+    <script>
+        document.querySelectorAll(".input-matiere").forEach((select) => {
+            select.addEventListener("change", function () {
+                // Trouver l'option sélectionnée
+                let selectedOption = this.options[this.selectedIndex];
+                
+                // Récupérer la valeur de l'attribut "enseignant"
+                let enseignantName = selectedOption.getAttribute("enseignant") || "Aucun enseignant";
+
+                // Trouver le <span> qui est juste après le <select>
+                let enseignantSpan = this.closest("td").querySelector(".enseignants");
+
+                // Mettre à jour le contenu du <span>
+                if (enseignantSpan) {
+                    enseignantSpan.textContent = enseignantName;
+                }
+            });
+        });
+
+        document.getElementById("timetable-form").addEventListener("submit", function (event) {
+            event.preventDefault();
+
+            var classe = document.getElementById("choix-classe").value;
+            var semestre = document.getElementById("choix-semestre").value;
+            var periode = document.getElementById("periode").value;
+
+            var matieresSelect = document.querySelectorAll(".input-matiere"); // les select des matières
+
+            if (classe && semestre && periode){
+                var Data = new FormData();
+
+                Data.append('classe', classe);
+                Data.append('semestre', semestre);
+                Data.append('periode', periode);
+
+                let emploi_de_temps = [];
+
+                matieresSelect.forEach((select) => {
+                    matiere = select.value;
+                    enseignant = select.closest("td").querySelector(".enseignants").textContent.trim(); //  nom de l'enseignant
+                    horaire = select.closest("td").querySelector(".col-md-7").value.trim(); // horaire du cours
+
+                    jour = select.closest("td").getAttribute("id"); // jour de la semaine
+                    numero_ligne = select.closest("td").closest("tr").getAttribute("id"); // numero de la ligne
+
+                    id_cours = jour + "_" + numero_ligne;
+
+                    let programmation = {
+                        'jour': jour,
+                        'numero_ligne': numero_ligne,
+                        'matiere': matiere,
+                        'enseignant': enseignant,
+                        'horaire': horaire
+                    };
+
+                    emploi_de_temps.push(programmation);
+                });
+
+                Data.append("emploi_de_temps", JSON.stringify(emploi_de_temps));
+                console.log(JSON.stringify(emploi_de_temps));
+
+                $.ajax({
+                    url: '{% url "save_time_table" %}',
+                    type: "POST",
+                    data: Data,
+                    processData: false,  // Ne pas transformer les données en chaîne de caractères
+                    contentType: false,  // Ne pas définir de type de contenu (nécessaire pour FormData)
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    success: function(response) {
+                        alert('L\'emploi de temps a été sauvegardé !!!');
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Erreur:', xhr.responseJSON ? xhr.responseJSON.error : error);
+                        alert('Erreur lors de l \' enregistrement.');
+                    }
+                });
+            };
+        });
+
+       function Select_function(){
+            // Envoyer les données seulement si la classe et le semestre sont spécifiés
+            let form = document.getElementById("search-form");
+            let classe_form = document.getElementById("choix-classe").value;
+            let semestre_form = document.getElementById("choix-semestre").value;
+
+            if (classe_form && semestre_form){
+                console.log(classe_form);
+                console.log(semestre_form);
+                form.submit();
+            }else{
+                alert("Vous devez renseigner la classe et le semestre !!!");
+            }
+        }
+
+    </script>
+{% endblock scripts %}
+

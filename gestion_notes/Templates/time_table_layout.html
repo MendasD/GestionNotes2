@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emploi du Temps</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+    <style>
+        body {
+            background-color: #fdf7f1;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #e0e0e0;
+            padding: 10px;
+            text-align: center;
+        }
+        th {
+            background-color: #faf3eb;
+        }
+        .matiere {
+            border-radius: 8px;
+            padding: 5px;
+            text-align: center;
+        }
+        .psycho { background-color: #dfe7f3; }  /* Bleu */
+        .stats { background-color: #f7e7d1; }   /* Beige */
+        .neuro { background-color: #f8d7a3; }   /* Orange */
+        .anglais { background-color: #ece1d9; } /* Gris clair */
+        .dev { background-color: #cbdaf3; }     /* Bleu foncé */
+    </style>
+</head>
+<body class="p-8">
+    <h1 class="text-center text-2xl font-bold">Emploi du Temps - 1er Semestre</h1>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Heures</th>
+                <th>Lundi</th>
+                <th>Mardi</th>
+                <th>Mercredi</th>
+                <th>Jeudi</th>
+                <th>Vendredi</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>8h00</td>
+                <td class="matiere psycho">Psychologie Sociale <br> Salle 103</td>
+                <td class="matiere stats">Statistiques <br> Salle 202</td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>9h00</td>
+                <td class="matiere psycho">Psychologie Sociale <br> Salle 103</td>
+                <td class="matiere stats">Statistiques <br> Salle 202</td>
+                <td></td>
+                <td class="matiere psycho">Psychologie <br> Salle 012</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>10h00</td>
+                <td></td>
+                <td class="matiere psycho">Psychologie Sociale <br> Salle 420</td>
+                <td class="matiere psycho">Psychologie <br> Salle 012</td>
+                <td></td>
+                <td class="matiere dev">Développement <br> Salle 311</td>
+            </tr>
+            <tr>
+                <td>11h00</td>
+                <td></td>
+                <td class="matiere psycho">Psychologie Sociale <br> Salle 420</td>
+                <td class="matiere psycho">Psychologie <br> Salle 012</td>
+                <td></td>
+                <td class="matiere dev">Développement <br> Salle 311</td>
+            </tr>
+            <tr>
+                <td>14h00</td>
+                <td class="matiere stats">Statistiques <br> Salle 207</td>
+                <td class="matiere psycho">Psychologie <br> Salle 012</td>
+                <td></td>
+                <td class="matiere neuro">Neurosciences <br> Salle 403</td>
+                <td class="matiere neuro">Neurosciences <br> Salle 403</td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html>

@@ -1,11 +1,18 @@
 {% extends 'base2.html' %}
 {% load static %}
+{% load custom_filters %}
+
+{% block breadcrumb %}
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'accueil_responsable' %}">Accueil</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Tableau de bord</li>
+    </ol>
+
+{% endblock breadcrumb %}
 
 {% block content %}
 
-
 <style>
-/* static/css/dashboard.css */
 
 :root {
     --primary: #3498db;
@@ -167,14 +174,43 @@
 
 </style>
 
+<form id="search-form" class="form" method='get'>
+        <div class="row">
+
+            <select name="classe" id="choix-classe" class="col-md-3 search-input me-2" onchange="Select_function()">
+                <option value="" disabled selected>Classe</option>
+                {% for classe in classes %}
+                    <option value="{{classe}}" {% if classe == selected_classe %}selected{% endif %}>{{classe}}</option>
+                {% endfor %}
+            </select>
+            
+            <select name="semestre" id="choix-semestre" class="col-md-3 search-input me-2" onchange="Select_function()">
+                <option value="" disabled selected>Semestre</option>
+                <option value="semestre1" {% if selected_semestre == 'semestre1' %}selected{% endif %}>Semestre 1</option>
+                <option value="semestre2" {% if selected_semestre == 'semestre2' %}selected{% endif %}>Semestre 2</option>
+                
+            </select>
+
+            <select name="annee" id="choix-annee" class="col-md-3 search-input me-2" onchange="Select_function()">
+                <option value="" disabled selected>annee</option>
+                <option value="annee1" {% if selected_annee == 'annee1' %}selected{% endif %}>annee 1</option>
+                <option value="annee2" {% if selected_annee == 'annee2' %}selected{% endif %}>annee 2</option>
+                
+            </select>
+
+            <a href="{% url 'dashboard' %}" class="btn btn-primary col-md-1 btn-sm float-end"> Effacer</a>
+        </div>
+      
+        
+    </form><br>
+
 <div class="dashboard-container">
     <!-- Main Content -->
     <div class="main-content">
         <div class="header">
             <h2>Tableau de bord</h2>
             <div class="user-actions">
-                <span class="notification-badge">3</span>
-                <img src="{% static 'images/avatar.png' %}" alt="Avatar" class="avatar">
+                <span class="notification-badge" data-bs-toggle="tooltip" title="Nombre d'étudiants avec une moyenne < 12" style="cursor:pointer;">{{moyennes_inf_12}}</span>
             </div>
         </div>
 
@@ -190,18 +226,31 @@
                 </div>
             </div>
 
-            <!-- Card 2: Nombre de professeurs -->
-            <div class="stat-card bg-success">
-                <div class="stat-icon">
-                    <i class="fas fa-female"></i>
+            <div class="row stat-card bg-success" style="align-items:center; display:flex; justify-content:center;">
+                <!-- Card 2: Nombre de filles -->
+                <div class="col-md-3 me-4">
+                    <div class="stat-icon">
+                        <i class="fas fa-female"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>{{ girls_count | default:'0' }}</h3>
+                        <p>Filles</p>
+                    </div>
                 </div>
-                <div class="stat-info">
-                    <h3>{{ girls_count | default:'0' }}</h3>
-                    <p>Filles</p>
+
+                <!-- Card 3: Nombre de garçons -->
+                <div class="col-md-3 me-2" style="border-left: 4px solid white; height: 100%;">
+                    <div class="stat-icon">
+                        <i class="fas fa-male"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>{{ boys_count | default:'0' }}</h3>
+                        <p>Garçons</p>
+                    </div>
                 </div>
             </div>
 
-            <!-- Card 3: Moyenne générale -->
+            <!-- Card 4: Moyenne générale -->
             <div class="stat-card bg-warning">
                 <div class="stat-icon">
                     <i class="fas fa-chart-line"></i>
@@ -215,58 +264,118 @@
             <!-- Card 4: Dernières notes -->
             <div class="stat-card bg-info">
                 <div class="stat-icon">
-                    <i class="fas fa-book"></i>
+                    <i class="fas fa-chalkboard-teacher"></i>
                 </div>
                 <div class="stat-info">
-                    <h3>{{ nouvelles_notes }}</h3>
-                    <p>Nouvelles notes</p>
+                    <h3>{{ enseignants | default:0 }}</h3>
+                    <p>Enseignants</p>
                 </div>
             </div>
         </div>
 
-        <!-- Graphique des performances -->
-        <div class="card">
-            <div class="card-header">
-                <h3>Performances par matière</h3>
-            </div>
-            <div class="card-body">
-                <canvas id="performanceChart"></canvas>
-            </div>
-        </div>
 
-        <!-- Dernières notes ajoutées -->
+        <!-- Meilleurs étudiants -->
         <div class="card">
             <div class="card-header">
-                <h3>Dernières notes</h3>
-                <a href="#" class="btn btn-sm btn-primary">Voir tout</a>
+                <h3>Meilleures performances</h3>
+                <!-- <a href="#" class="btn btn-sm btn-primary">Voir tout</a> -->
             </div>
             <div class="card-body">
                 <table class="table">
                     <thead>
                         <tr>
-                            <th>Élève</th>
-                            <th>Matière</th>
-                            <th>Note</th>
-                            <th>Date</th>
+                            <th>Étudiant</th>
+                            <th>classe</th>
+                            <th>Moyenne</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for note in recent_notes %}
+                        {% for performance in meilleures_performances %}
                         <tr>
-                            <td>{{ note.etudiant.name }}</td>
-                            <td>{{ note.matiere }}</td>
-                            <td><span class="badge {% if note.note >= 12 %}badge-success{% else %}badge-danger{% endif %}">{{ note.note }}</span></td>
-                            <td>{{ note.created_at|date:"d/m/Y" }}</td>
+                            <td>{{ performance|get_item:"name" }}</td>
+                            <td>{{ performance|get_item:"classe" }}</td>
+                            {% with moyenne=performance|get_item:"moyenne" %}
+                                <td><span class="badge {% if moyenne >= 12 %}badge-success{% else %}badge-danger{% endif %}">{{ moyenne }}</span></td>
+                            {% endwith %}
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
         </div>
+
+        <!-- Statistiques classes -->
+        <div class="card">
+            <div class="card-header">
+                <h3>Quelques statistiques</h3>
+                <a href="#" class="btn btn-sm btn-primary">Voir tout</a>
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Moyenne</th>
+                            <th>Min</th>
+                            <th>Max</th>
+                            <th>Médiane</th>
+                            <th>Ecart-type</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            {% with stat_moyenne=stats_moyennes|get_item:"moyenne" %}
+                                <td><span class="badge {% if stat_moyenne >= 12.00 %}badge-success{% else %}badge-danger{% endif %}">{{ stat_moyenne|floatformat:2 }}</span></td>
+                            {% endwith %}
+                            <td>{{ stats_moyennes|get_item:"min" }}</td>
+                            <td>{{ stats_moyennes|get_item:"max" }}</td>
+                            <td>{{ stats_moyennes|get_item:"median" }}</td>
+                            <td>{{ stats_moyennes|get_item:"sd"|floatformat:2 }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Graphique des performances -->
+        <div class="card">
+            <div class="card-header">
+                <h3>Histogramme des moyennes</h3>
+            </div>
+            <div class="card-body">
+
+                {{stats_moyennes.histogram|safe}}
+                
+                <!-- <img src="data:image/png;base64,{{ stats_moyennes.histogram }}" alt="Histogramme des moyennes"> -->
+                <!-- <canvas id="performanceChart1"> </canvas> -->
+               
+            </div>
+        </div>
+        
     </div>
 </div>
 
 <script>
+
+    function Select_function(){
+            // Envoyer les données seulement si la classe et le semestre sont spécifiés
+            let form = document.getElementById("search-form");
+            let classe_form = document.getElementById("choix-classe").value;
+            let semestre_form = document.getElementById("choix-semestre").value;
+
+            if (classe_form && semestre_form){
+                console.log(classe_form);
+                console.log(semestre_form);
+                form.submit();
+            }else{
+                if(classe_form){
+                    console.log(classe_form);
+                    form.submit();
+                }else{
+                    alert("Vous devez renseigner la classe et le semestre !!!");
+                }
+            } 
+        }
+
 // static/js/dashboard.js
 document.addEventListener('DOMContentLoaded', function() {
     // Graphique des performances

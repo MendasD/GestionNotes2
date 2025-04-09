@@ -1,5 +1,5 @@
 from django import forms
-from connexion.models import Matiere, Responsable, Etudiant, Classe, Message, FichiersJoints
+from connexion.models import Matiere, Responsable, Etudiant, Classe, Message, FichiersJoints, Enseignants
 from django.core.validators import RegexValidator
 from django.core.exceptions import ValidationError
 
@@ -227,4 +227,20 @@ class OneMessageForm(forms.ModelForm):
         widgets = {
             'message': forms.Textarea(attrs={'rows': 4, 'cols': 80}),
         }
+
+class EnseignantForm(forms.ModelForm):
+    class Meta:
+        model = Enseignants
+        exclude = ('last_login','password','is_active')
+        widgets = {
+            'password': forms.PasswordInput(),
+            'sexe': forms.Select(choices=SEXE_CHOICES),
+            'nationalite': forms.Select(choices=NATIONALITY_CHOICES),
+        }
+
+    def save(self, commit=True):
+        enseignant = super().save(commit=False)
+        if commit:
+            enseignant.save()
+        return enseignant
 

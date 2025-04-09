@@ -14,8 +14,10 @@
 
     <!-- Pour les fa-fa -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     
     <link rel="stylesheet" href="{% static 'css/style2.css' %}">
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
     {% block extra_styles %}
     
     {% endblock %}
@@ -23,26 +25,7 @@
 </head>
 
 <body style="display: flex; flex-direction: column; min-height: 100vh;">
-    <style>
-        .offcanvas-link:hover{
-            color: rgb(116, 70, 15) !important;
-        }
-
-        .badge {
-            background-color: green;  /* Couleur de fond */
-            color: white;  /* Couleur du texte */
-            padding: 5px 10px;  /* Espace intérieur pour rendre le badge circulaire */
-            border-radius: 50%;  /* Rendre le badge circulaire */
-            font-size: 10px;    
-        }
-        .monfooter{  
-            padding: 2px;
-            background-color: #f1f1f1; /* Couleur de fond du footer */
-            text-align: center;
-            padding: 10px 0;
-        }
-    </style>
-
+   
     <!-- Offcanvas Sidebar -->
     <div class="offcanvas offcanvas-start "  id="menucache">
     <div class="offcanvas-header">
@@ -69,46 +52,141 @@
     </div>
     </div>
 
+
+
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-light sticky-top">
-        <a class="navbar-brand" data-bs-toggle="offcanvas" href="#menucache" style="color:blue; "><i class="fa fa-bars" style="font-size:16px; color:blue; font-weight: bold;"></i>GestionNotes</a>
-        <!-- Le boutton toggle va apparaître pour les petits écrans -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+         <!-- toggle Sidebar -->
+         <button class="navbar-brand btn btn-dark " id="toggleSidebar">
+            
+                <i class="fas fa-bars"></i>
+        </button>
+
+        <!-- Toggle pour le offcanvas -->
+        <!-- <a class="navbar-brand" data-bs-toggle="offcanvas" href="#menucache" style="color:blue; "><i class="fa fa-bars" style="font-size:20px; color:white; margin-left:5px; padding: 3px;"></i></a><a class="navbar-brand" data-bs-toggle="offcanvas" href="#menucache"></a> --> 
+
+
+        <!-- Nom de la plateforme -->
+        <a href="#" style="text-decoration: none;"><span style="font-size: 20px; color: orange; margin-left:3px;">GESTION </span><span class="me-2" style="font-size: 20px; color: blue;margin-left:3px;">NOTES</span></a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
+
+         <!-- Barre supérieure de recherche -->
+         <div navbar-expand-sm>
+            <div class="input-group">
+                <span class="input-group-text me-0"><i class="fas fa-search"></i></span>
+                <input class="form-control me-2" type="search" placeholder="Votre Recherche" aria-label="Search">
+            </div>
+        </div>
+                    
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav">
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'notes_etudiants' %}" id="notes">Mes Notes</a>
+                    <a class="nav-link" href="{% url 'accueil_etudiant' %}" id="accueil">Acceuil</a>
                 </li>
-                <!-- <li class="nav-item">
-                    <a class="nav-link" href="#">Étudiants</a>
-                </li> -->
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'notes_etudiants' %}" id="notes">Mes notes</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'mon_emploi_de_temps' %}" id="time_table">Emploi de temps</a>
+                </li>
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'mes_messages' %}" id="messages">Messages
-                    {% block message_non_lues %}
-                        {% if nb_message > 0 %}
-                            <span class="badge" id="messages_non_lus">{{ nb_message }}</span>
-                        {% endif %}
-                    {% endblock message_non_lues %}</a>
+                        {% block message_non_lues %}
+                            {% if nb_message > 0 %}
+                                <span class="badge" id="messages_non_lus">{{ nb_message }}</span>
+                            {% endif %}
+                        {% endblock message_non_lues %}
+                    </a>
                 </li>
             </ul>
 
             <ul class="navbar-nav ml-auto">
                 <div class="form-check form-switch">
                     <input class="form-check-input" type="checkbox" id="mySwitch" name="darkmode" onclick="darkmode()" value="yes" {% if theme == 'dark' %}checked{% endif %}>
-                    <label class="form-check-label" for="mySwitch">Dark Mode</label>
+                    <label class="form-check-label me-2" for="mySwitch">Dark Mode</label>
+                </div>
+          
+            </ul>
+        </div>
+
+        <div class="navbar-expand-sm">
+            <div class="d-flex align-items-center">
+                <!-- Icône utilisateur -->
+                <span class="me-1" style="color: orange; font-size: 23px;">
+                    <a style="color: orange;" href="{% url 'modifier_etudiant2' %}"><i class="fas fa-user-circle"></i></a>
+                </span>
+                
+                <!-- Texte "Bienvenue" -->
+                <span class="me-0" style="font-size: 20px; color: orange;">
+                    Bienvenue {{username}}
+                </span>
+
+                <!-- Dropdown -->
+                <div class="dropdown">
+                    <a role="button" class="dropdown-toggle text-white me-4" style="font-size: 20px;" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="true">
+                    </a>
+
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                        <li><a class="dropdown-item" href="{% url 'modifier_etudiant2' %}">Profil</a></li>
+                        <li><a class="dropdown-item" href="#">Paramètres</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{% url 'logout' %}">Déconnexion</a></li>
+                    </ul>
                 </div>
 
-                <!-- Boutton de deconnexion -->
-                <li id="logout" class="nav-item">
-                    <a class="nav-link" href="{% url 'logout' %}"><i class="fa fa-sign-out" style="font-size:38px;color:red"></i></a>
-                </li>
-            </ul>
+            </div>
         </div>
     </nav>
 
-    <div class="container mt-5">
+
+     <!-- Barre de navigation latérale -->
+    {% block navigation_laterale %}
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+
+        <div class="sidebar-header">
+            <h3>Menu</h3>
+            <p>Bienvenue, {{ request.user.name }}</p>
+        </div>
+
+        <div class="sidebar-menu">
+        <!-- Acceuil -->
+        <a class="nav-link"  href="{% url 'accueil_etudiant' %}"><i class="fas fa-home"></i> Accueil</a>
+       
+        <!-- Notes -->
+        <a href="{% url 'notes_etudiants' %}" class="nav-link"><i class="fas fa-book"></i> Mes notes</a>
+
+        <!-- Messages -->
+        <a href="{% url 'mes_messages' %}" class="nav-link"><i class="fas fa-users"></i> Messages
+            {% if nb_message > 0 %}
+                <span class="badge" id="messages_non_lus">{{ nb_message }}</span>
+            {% endif %}
+        </a>
+
+        <!-- Profil -->
+        <a href="{% url 'modifier_etudiant2' %}" class="nav-link"><i class="fa fa-user"></i> Profil</a>
+
+
+        <!-- Emploi de temps -->
+        <a href="{% url 'mon_emploi_de_temps' %}" class="nav-link"><i class="fas fa-calendar"></i> Emploi de temps</a>
+
+
+        <!-- Paramètres -->
+        <a href="" class="nav-link"><i class="fas fa-cog"></i> Paramètres</a>
+        <hr>
+
+        <!-- Déconnexion -->
+        <a href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> Déconnexion</a>
+
+        </div>
+
+    </div>
+    {% endblock navigation_laterale %}
+
+
+    <div class="content container mt-0" id="mainContent">
 
         <!-- Bloc des messages flash -->
         {% block messages %}
@@ -124,9 +202,22 @@
             {% endif %}
         {% endblock %}
 
+        <nav aria-label="breadcrumb">
+            <!-- Chemin d'aborescence -->
+            {% block breadcrumb %}
+            
+            {% endblock breadcrumb %}
+        </nav>
+
         {% block content %}
        
         {% endblock %}
+    </div>
+
+    <!-- Loader pour indiquer un processus en cours -->
+    <div id="loader" style="display: none;">
+        <div class="spinner"></div>
+        <p class="loader-text">Traitement en cours...</p>
     </div>
 
     <footer class="bg-light text-center text-lg-start mt-auto py-3 monfooter" style="margin-top: 10px;">
@@ -138,14 +229,20 @@
     </footer>
 
     <!-- Bootstrap JS and dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!--
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    -->
 
-   <!-- Bootstrap JavaScript for the offcanvas -->
+   <!-- Bootstrap JavaScript for the offcanvas 
    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+   -->
 
     <script src="{% static 'javascript/etudiant.js' %}" ></script>
+    <script src="{% static 'javascript/base.js' %}" ></script>
 
      <script>
         function darkmode(){
@@ -189,7 +286,7 @@
             }
             
         }
-    </script>
+    </script> 
 
     {% block scripts %}
     {% endblock %}

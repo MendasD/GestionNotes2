@@ -2,7 +2,7 @@ from django.db import models
 from django.utils import timezone
 from django.contrib.auth.hashers import make_password
 from django.contrib import messages
-# Create your models here.
+import uuid
 
 class Etudiant(models.Model):
     matricule = models.CharField(max_length=100, primary_key=True)
@@ -195,6 +195,7 @@ class Matiere(models.Model):
             ('semestre2', 'Semestre 2')
         ]
     )
+    enseignant = models.ForeignKey('Enseignants', on_delete=models.SET_NULL, null=True, blank=True, related_name='matieres')
 
     class Meta:
         constraints = [
@@ -242,6 +243,34 @@ class Moyenne(models.Model):
     classe = models.ForeignKey(Classe, on_delete=models.CASCADE, related_name='moyennes')
     annee_scolaire = models.CharField(max_length=9, default='1999-2000')
     moyenne = models.FloatField()
+
+class Enseignants(models.Model):
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=100)
+    email = models.EmailField(unique=True)
+    contact = models.CharField(max_length=100, blank=True, null=True)
+    password = models.CharField(max_length=100, default='', blank=True, null=True)
+    nationalite = models.CharField(max_length=100, blank=True, null=True)
+    sexe = models.CharField(max_length=1, blank=True, null=True)
+    is_permanent = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    last_login = models.DateTimeField(null=True,blank=True)
+
+    def __str__(self):
+        return self.name
+
+    def update_last_login(self):
+        self.last_login = timezone.now()
+        self.save()
+
+    def set_password(self, raw_password):
+        self.password = make_password(raw_password)
+
+    def check_password(self, raw_password):
+        from django.contrib.auth.hashers import check_password
+        return check_password(raw_password, self.password)
     
 class Responsable(models.Model):
     id = models.AutoField(primary_key=True)
@@ -347,3 +376,63 @@ class FichiersJoints(models.Model):
     message = models.ForeignKey(Message,on_delete=models.CASCADE,related_name='fichier_joint')
     fichier = models.FileField(upload_to='Messages_fichiers/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+class EmploiDeTemps(models.Model):
+    numero = models.AutoField(primary_key=True)
+    classe = models.ForeignKey(Classe, on_delete=models.CASCADE, related_name='emploi_de_temps')
+    semestre = models.CharField(
+        max_length=20,
+        choices=[
+            ('semestre1', 'Semestre 1'),
+            ('semestre2', 'Semestre 2')
+        ]
+    )
+
+    def __str__(self):
+        return f"{self.classe.name} - {self.periode}"
+    
+class EmploiDuTemps(models.Model):
+    """classe réellement utilisée pour créer les emploi de temps"""
+    id = models.AutoField(primary_key=True)
+    periode = models.CharField(max_length=100)
+    classe = models.ForeignKey(Classe, on_delete=models.CASCADE, related_name='emploi_du_temps')
+    semestre = models.CharField(
+        max_length=20,
+        choices=[
+            ('semestre1', 'Semestre 1'),
+            ('semestre2', 'Semestre 2')
+        ]
+    )
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['periode', 'classe'], name='unique_emploi_du_temps')
+        ]
+
+    def __str__(self):
+        return f"{self.classe.name} - {self.periode}"
+
+class Programmation(models.Model):
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    matiere = models.ForeignKey(Matiere, on_delete=models.CASCADE, related_name='programmation')
+    horaire = models.CharField(max_length=100)
+    emploi_de_temps = models.ForeignKey(EmploiDeTemps, on_delete=models.CASCADE, related_name='programmation')
+
+    def __str__(self):
+        return f"{self.matiere.name} - {self.horaire}"
+    
+class Programmation_cours(models.Model):
+    """classe réellement utilisée pour la programmation des cours"""
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    matiere = models.ForeignKey(Matiere, on_delete=models.CASCADE, related_name='programmation_cours', null=True, blank=True)
+    horaire = models.CharField(max_length=100)
+    jour = models.CharField(max_length=100, null=True, blank=True)
+    numero = models.IntegerField() # position du cours dans la journée
+    emploi_du_temps = models.ForeignKey(EmploiDuTemps, on_delete=models.CASCADE, related_name='programmation_cours')
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.matiere.name} - {self.horaire}"
+    

@@ -1,14 +1,48 @@
 {% extends "base2.html" %}
 {% load static %}
 
+{% block breadcrumb %}
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'accueil_responsable' %}">Accueil</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Mon profil</li>
+    </ol>
+
+{% endblock breadcrumb %}
+
 {% block content %}
     <h2 class="mb-4">Modifier vos  informations </h2>
 
     <!-- Formulaire pour la modification d'un étudiant -->
-    <form method='POST' enctype='multipart/form-data' class="form p-4 shadow-sm bg-light rounded">
+    <form method='POST' enctype='multipart/form-data' class="form p-4 shadow-sm bg-light rounded" id="monFormulaire">
         {% csrf_token %}
         {{form.as_p}}
 
-        <button type="submit" class="btn btn-primary">Valider</button>
+        <button id="modifierBtn" type="button" class="btn btn-primary">Modifier</button>
+        <button type="submit" class="btn btn-success d-none" id="validerBtn">Valider</button>
     </form>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const form = document.getElementById('monFormulaire');
+            const modifierBtn = document.getElementById('modifierBtn');
+            const validerBtn = document.getElementById('validerBtn');
+
+            // Fonction pour activer ou desactiver tous les champs du formulaire
+            function manageFormInputs(form, value) {
+                const inputs = form.querySelectorAll('input, select, textarea');
+                inputs.forEach(input => {
+                    input.disabled = value;
+                });
+            }
+
+            modifierBtn.addEventListener('click', function () {
+                manageFormInputs(form, false); // Active les champs
+                validerBtn.classList.remove('d-none'); // Affiche "Valider"
+                modifierBtn.classList.add('d-none');   // Cache "Modifier"
+            });
+
+            // Désactiver les champs au chargement
+            manageFormInputs(form, true);
+        });
+    </script>
 {% endblock content %}

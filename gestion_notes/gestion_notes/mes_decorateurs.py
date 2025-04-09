@@ -9,7 +9,7 @@ def is_login(function):
         else:
             response = function(request, *args, **kwargs)  # On appelle la fonction originale
             
-            # Verifie si la view retourne une reponse http valide
+            # Verifie si la view ne retourne pas une reponse http valide
             if response is None:
                 raise ValueError("The view did not return an HttpResponse object.")
             

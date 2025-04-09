@@ -1,5 +1,13 @@
 {% extends "base2.html" %}
 
+{% block breadcrumb %}
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'accueil_responsable' %}">Accueil</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Modifier matière</li>
+    </ol>
+
+{% endblock breadcrumb %}
+
 {% block content %}
 <style>
     #form1 > label{
