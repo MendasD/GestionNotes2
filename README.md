@@ -149,6 +149,7 @@ gestion-notes/
 ├── templates/             # Fichiers HTML
 ├── static/                # CSS, JS, images
 ├── modeles/                 # Contient les maquettes de bulletin
+├── Fichiers_tests/     # Contient les fichiers tests utilisés pour l'ajout des matières, étudiants et notes
 ├── db.sqlite3             # Base de données locale
 ├── manage.py
 └── requirements.txt
@@ -173,9 +174,10 @@ Ce projet a été réalisé par une équipe de deux (02) étudiants de l'ENSAE, 
 - [x] Emplois du temps
 - [x] Messagerie interne avec fichiers joints
 - [x] Organisation par année scolaire
-- [x] Export PDF des bulletins
+- [x] Export des bulletins
 - [x] Téléchargement des fichiers recapitulatifs côté responsable
 - [ ] Notification automatique par mail
+- [ ] Modèle intelligent pour interagir avec la base de données
 - [ ] Interface mobile responsive
 
 ---

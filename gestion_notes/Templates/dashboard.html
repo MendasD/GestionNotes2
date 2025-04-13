@@ -191,12 +191,14 @@
                 
             </select>
 
+            <!--
             <select name="annee" id="choix-annee" class="col-md-3 search-input me-2" onchange="Select_function()">
                 <option value="" disabled selected>annee</option>
                 <option value="annee1" {% if selected_annee == 'annee1' %}selected{% endif %}>annee 1</option>
                 <option value="annee2" {% if selected_annee == 'annee2' %}selected{% endif %}>annee 2</option>
                 
             </select>
+            -->
 
             <a href="{% url 'dashboard' %}" class="btn btn-primary col-md-1 btn-sm float-end"> Effacer</a>
         </div>
@@ -308,7 +310,9 @@
         <div class="card">
             <div class="card-header">
                 <h3>Quelques statistiques</h3>
+                <!--
                 <a href="#" class="btn btn-sm btn-primary">Voir tout</a>
+                -->
             </div>
             <div class="card-body">
                 <table class="table">

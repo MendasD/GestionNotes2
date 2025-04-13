@@ -84,7 +84,7 @@
          <div navbar-expand-sm>
             <div class="input-group">
                 <span class="input-group-text me-0"><i class="fas fa-search"></i></span>
-                <input class="form-control me-2" type="search" placeholder="Votre Recherche" aria-label="Search">
+                <input class="form-control me-2" type="search" placeholder="Non disponible pour le moment" aria-label="Search">
             </div>
         </div>
                     
@@ -126,7 +126,7 @@
                 
                 <!-- Texte "Bienvenue" -->
                 <span class="me-0" style="font-size: 20px; color: orange;">
-                    Bienvenue {{username}}
+                    {{username|default:"Bienvenue"}}
                 </span>
 
                 <!-- Dropdown -->
@@ -136,7 +136,7 @@
 
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                         <li><a class="dropdown-item" href="{% url 'modifier_responsable' %}">Profil</a></li>
-                        <li><a class="dropdown-item" href="#">Paramètres</a></li>
+                        <!-- <li><a class="dropdown-item" href="#">Paramètres</a></li> -->
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="{% url 'logout' %}">Déconnexion</a></li>
                     </ul>
@@ -152,7 +152,6 @@
 
         <div class="sidebar-header">
             <h3>Menu</h3>
-            <p>Bienvenue, {{ request.user.name }}</p>
         </div>
 
         <div class="sidebar-menu">
@@ -213,7 +212,7 @@
         <a href="{% url 'dashboard' %}" class="nav-link"><i class="fas fa-tachometer-alt"></i> Tableau de bord</a>
 
         <!-- Paramètres -->
-        <a href="" class="nav-link"><i class="fas fa-cog"></i> Paramètres</a>
+        <!-- <a href="" class="nav-link"><i class="fas fa-cog"></i> Paramètres</a>  -->
         <hr>
 
         <!-- Déconnexion -->
