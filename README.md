@@ -14,16 +14,16 @@
 - [👨‍💻 Auteurs](#-auteurs)
 - [📌 Roadmap](#-roadmap)
 - [📄 Licence](#-licence)
-- [📬 Contact](#-contact)
 
 ---
 
 ## 🎯 Objectifs du projet
 
 Fournir une solution numérique performante pour :
-- Suivre les performances académiques des élèves.
+- Faciliter le partage des notes aux différents élèves
+- Contrôler les performances académiques des élèves.
 - Planifier les emplois du temps.
-- Faciliter la communication entre les acteurs pédagogiques.
+- Faciliter la communication entre les responsables et étudiants.
 - Conserver et consulter les données **par année scolaire**.
 
 ---
@@ -31,42 +31,41 @@ Fournir une solution numérique performante pour :
 ## ✨ Fonctionnalités
 
 ### 📚 Gestion des étudiants
-- Ajouter un nouvel étudiant avec photo, informations personnelles et année scolaire d’inscription.
+- Ajouter un nouvel étudiant ou une liste d'étudiants avec informations personnelles et année scolaire d’inscription.
 - Lister les étudiants filtrés par classe et année scolaire.
 - Modifier les informations d’un étudiant.
 - Supprimer un étudiant.
 - Gérer la promotion en classe supérieure.
-- Marquer un étudiant comme diplômé ou retiré.
+- Marquer un étudiant comme diplômé ou exclu...
 
 ### 📝 Gestion des notes
 - Enregistrer les notes par matière, semestre, élève et année scolaire.
 - Calcul automatique des moyennes.
-- Génération de relevés de notes par semestre/année.
-- Suivi des performances globales par classe, par matière ou par élève.
-- Archivage des notes par année scolaire.
+- Génération de bulletins.
+- Suivi des performances globales et par classe.
+- Télécharger les fichiers récapitulatifs, côté responsable
+
 
 ### 🗓️ Gestion des emplois du temps
-- Créer et modifier les emplois du temps selon les classes et les niveaux.
-- Affecter des matières à des créneaux horaires.
-- Gestion des enseignants, des salles et des plages horaires.
-- Visualisation hebdomadaire et possibilité d’impression.
-- Emplois du temps enregistrés **par année scolaire**.
+- Créer et modifier les emplois du temps selon les classes.
+- Suppression d'emplois de temps
+- Visualisation hebdomadaire.
+- Emplois du temps enregistrés **par période**.
 
 ### 📬 Messagerie interne avec fichiers joints
-- Envoi de messages entre administrateurs, enseignants et étudiants.
+- Envoi de messages des responsables aux étudiants.
 - Ajout de **pièces jointes** (images, PDF, Word, etc.).
-- Boîte de réception et d’envoi.
-- Historique et archivage des échanges.
+
 
 ### 👤 Gestion des utilisateurs
-- Authentification sécurisée avec rôles (admin, enseignant, étudiant).
+- Authentification sécurisée avec rôles (responsable, étudiant).
 - Interface personnalisée selon le rôle.
 - Gestion des droits et permissions.
 
 ### 📆 Organisation par année scolaire
 - Toutes les informations (étudiants, notes, emplois du temps, messages) sont **liées à une année scolaire**.
-- Possibilité de basculer facilement d’une année à une autre.
-- Accès aux archives des années précédentes.
+- Possibilité de consulter facilement les informations d’une année à une autre.
+- Accès aux données des années précédentes.
 
 ---
 
@@ -111,7 +110,7 @@ pip install -r requirements.txt
 python manage.py migrate
 ```
 
-### 6. Créer un superutilisateur
+### 6. Créer un superutilisateur (optionnel)
 
 ```bash
 python manage.py createsuperuser
@@ -131,13 +130,12 @@ Accédez à l’application sur [http://127.0.0.1:8000](http://127.0.0.1:8000)
 
 ```plaintext
 gestion-notes/
-├── notes/                 # App principale : gestion des notes
-├── emplois_temps/         # App pour la gestion des emplois du temps
-├── users/                 # Gestion des utilisateurs et rôles
-├── messagerie/            # Système de messagerie avec pièces jointes
+├── gestion_notes/                 # App principale : gestion des notes
+├── connexion/         # App pour la gestion des connections et authentifications
+├── Messages_fichiers/            # Sauvegarde les fichiers joints aux différents messages
 ├── templates/             # Fichiers HTML
 ├── static/                # CSS, JS, images
-├── media/                 # Fichiers uploadés
+├── modeles/                 # Contient les maquettes de bulletin
 ├── db.sqlite3             # Base de données locale
 ├── manage.py
 └── requirements.txt
@@ -147,14 +145,11 @@ gestion-notes/
 
 ## 👨‍💻 Auteurs
 
-Ce projet a été réalisé par une équipe d’étudiants passionnés en développement web :
+Ce projet a été réalisé par une équipe de deux (02) étudiants de l'ENSAE, passionnés en développement web :
 
-- 🧑‍💻 [Nom 1] – Développement backend & intégration
-- 👩‍💻 [Nom 2] – UI/UX et développement frontend
-- 🧑‍💻 [Nom 3] – Tests et documentation
-- 👨‍🏫 [Nom 4] – Conception des modèles pédagogiques
+- 🧑‍💻 [Daid Christ NZONDE] – <christnzonde@gmail.com>
+- 👩‍💻 [Wilfred TCHAPDA] 
 
-**Encadré par** : Prénom Nom (enseignant·e référent·e)
 
 ---
 
@@ -165,7 +160,8 @@ Ce projet a été réalisé par une équipe d’étudiants passionnés en dével
 - [x] Emplois du temps
 - [x] Messagerie interne avec fichiers joints
 - [x] Organisation par année scolaire
-- [ ] Export PDF des bulletins
+- [x] Export PDF des bulletins
+- [x] Téléchargement des fichiers recapitulatifs côté responsable
 - [ ] Notification automatique par mail
 - [ ] Interface mobile responsive
 
@@ -201,14 +197,4 @@ THE SOFTWARE.
 
 ---
 
-## 📬 Contact
-
-Pour toute question, suggestion ou collaboration :
-
-- ✉️ Email : contact@gestionnotes.dev
-- 🌐 Site Web : [https://gestionnotes.dev](https://gestionnotes.dev)
-- 📘 Documentation technique : bientôt disponible
-
----
-
-Merci d’avoir choisi GestionNotes ! 🎓📊
+Merci !!! 🎓📊
