@@ -72,7 +72,7 @@ Fournir une solution numérique performante pour :
 ## 🛠️ Technologies utilisées
 
 - **Python 3.10**
-- **Django **
+- **Django**
 - **SQLite**
 - **HTML**
 - **CSS**
