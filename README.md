@@ -147,8 +147,8 @@ gestion-notes/
 
 Ce projet a été réalisé par une équipe de deux (02) étudiants de l'ENSAE, passionnés en développement web :
 
-- 🧑‍💻 [Daid Christ NZONDE] – <christnzonde@gmail.com> - [https://www.linkedin.com/in/david-christ-mekontchou-nzonde-37a870304/]Linkedin
-- 👩‍💻 [Wilfred TCHAPDA] 
+- 🧑‍💻 **David Christ NZONDE** – <christnzonde@gmail.com> - [Linkedin](https://www.linkedin.com/in/david-christ-mekontchou-nzonde-37a870304/)
+- 👩‍💻 **Wilfred TCHAPDA** 
 
 
 ---
