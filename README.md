@@ -69,6 +69,19 @@ Fournir une solution numérique performante pour :
 
 ---
 
+## 🛠️ Technologies utilisées
+
+- **Python 3.10**
+- **Django **
+- **SQLite**
+- **HTML**
+- **CSS**
+- **Bootstrap 5**
+- **JavaScript**
+
+---
+
+
 ## 🚀 Installation et exécution
 
 Voici comment cloner le projet et l'exécuter en local :
