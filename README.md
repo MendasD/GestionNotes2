@@ -1,6 +1,6 @@
 # 🎓 GestionNotes – Application Django pour la Gestion Scolaire
 
-**GestionNotes** est une application web complète développée avec **Django** pour la gestion des notes, des emplois du temps et de la communication scolaire. Elle permet aux établissements d'organiser toutes les informations académiques autour de **l'année scolaire**, avec une interface intuitive pour les administrateurs, enseignants et étudiants.
+**GestionNotes** est une application web complète développée avec **Django** pour la gestion des notes, des emplois du temps et de la communication scolaire. Elle est conçue conformément au fonctionnement de l'Ecole Nationale de la Statistique et de l'Analyse Economique Pierre NDIAYE de Dakar (**ENSAE**). Elle permet à l'établissement d'organiser toutes les informations académiques concernant les notes ou les emplois de temps suivant **l'année scolaire**, avec une interface intuitive pour les administrateurs et les étudiants. Cette application permet à cet effet d'automatiser certaines tâches courantes de l'ENSAE et également de conserver les différentes données dans le temps, et garantit un accès simple et rapide à ces données.
 
 ---
 
@@ -77,7 +77,7 @@ Voici comment cloner le projet et l'exécuter en local :
 ### 1. Cloner le dépôt
 
 ```bash
-git clone https://github.com/votre-utilisateur/gestion-notes.git
+git clone https://github.com/MendasD/GestionNotes2.git
 cd gestion-notes
 ```
 
